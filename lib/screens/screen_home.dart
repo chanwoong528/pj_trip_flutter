@@ -24,6 +24,12 @@ class _ScreenHomeState extends State<ScreenHome> {
     Navigator.pushNamed(context, '/naver_map');
   }
 
+  void addTravel() {
+    setState(() {
+      _counter++;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -44,7 +50,9 @@ class _ScreenHomeState extends State<ScreenHome> {
           ],
         ),
       ),
+
       floatingActionButton: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         children: [
           FloatingActionButton(
             onPressed: _navigateToNaverMap,
@@ -56,6 +64,13 @@ class _ScreenHomeState extends State<ScreenHome> {
             onPressed: _navigateToMap,
             tooltip: 'Map',
             child: const Icon(Icons.map),
+          ),
+
+          FloatingActionButton(
+            heroTag: 'add',
+            onPressed: _incrementCounter,
+            tooltip: 'Map',
+            child: const Icon(Icons.add),
           ),
         ],
       ),

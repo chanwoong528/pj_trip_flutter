@@ -17,11 +17,11 @@ class _ScreenHomeState extends State<ScreenHome> {
   }
 
   void _navigateToMap() {
-    Navigator.pushNamed(context, '/google_map');
+    Navigator.pushNamed(context, '/map_wrap');
   }
 
   void _navigateToNaverMap() {
-    Navigator.pushNamed(context, '/naver_map');
+    Navigator.pushNamed(context, '/map_wrap');
   }
 
   void addTravel() {

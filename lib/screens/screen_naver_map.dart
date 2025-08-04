@@ -9,7 +9,7 @@ class ScreenNaverMap extends StatelessWidget {
     const seoulCityHall = NLatLng(37.5666, 126.979);
     final safeAreaPadding = MediaQuery.paddingOf(context);
     return Scaffold(
-      appBar: AppBar(title: const Text('Naver Map')),
+      // appBar: AppBar(title: const Text('Naver Map')),
       body: NaverMap(
         options: NaverMapViewOptions(
           contentPadding:

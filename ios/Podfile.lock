@@ -1,10 +1,8 @@
 PODS:
   - Flutter (1.0.0)
-  - flutter_config (0.0.1):
-    - Flutter
   - flutter_naver_map (1.4.0):
     - Flutter
-    - NMapsMap (= 3.22.0)
+    - NMapsMap (= 3.22.1)
   - Google-Maps-iOS-Utils (5.0.0):
     - GoogleMaps (~> 8.0)
   - google_maps_flutter_ios (0.0.1):
@@ -17,7 +15,7 @@ PODS:
   - GoogleMaps/Maps (8.4.0):
     - GoogleMaps/Base
   - NMapsGeometry (1.0.2)
-  - NMapsMap (3.22.0):
+  - NMapsMap (3.22.1):
     - NMapsGeometry
   - path_provider_foundation (0.0.1):
     - Flutter
@@ -25,7 +23,6 @@ PODS:
 
 DEPENDENCIES:
   - Flutter (from `Flutter`)
-  - flutter_config (from `.symlinks/plugins/flutter_config/ios`)
   - flutter_naver_map (from `.symlinks/plugins/flutter_naver_map/ios`)
   - google_maps_flutter_ios (from `.symlinks/plugins/google_maps_flutter_ios/ios`)
   - path_provider_foundation (from `.symlinks/plugins/path_provider_foundation/darwin`)
@@ -40,8 +37,6 @@ SPEC REPOS:
 EXTERNAL SOURCES:
   Flutter:
     :path: Flutter
-  flutter_config:
-    :path: ".symlinks/plugins/flutter_config/ios"
   flutter_naver_map:
     :path: ".symlinks/plugins/flutter_naver_map/ios"
   google_maps_flutter_ios:
@@ -51,13 +46,12 @@ EXTERNAL SOURCES:
 
 SPEC CHECKSUMS:
   Flutter: e0871f40cf51350855a761d2e70bf5af5b9b5de7
-  flutter_config: f48f0d47a284f1791aacce2687eabb3309ba7a41
-  flutter_naver_map: 268a12fcc3e5e68057181cfd2e29dcd1f4ea5914
+  flutter_naver_map: 8936ea216d66ead633d52950fc542dfb5bbcd7e0
   Google-Maps-iOS-Utils: 66d6de12be1ce6d3742a54661e7a79cb317a9321
   google_maps_flutter_ios: e31555a04d1986ab130f2b9f24b6cdc861acc6d3
   GoogleMaps: 8939898920281c649150e0af74aa291c60f2e77d
   NMapsGeometry: 4e02554fa9880ef02ed96b075dc84355d6352479
-  NMapsMap: 11190b621c8050069e4f41efa9e3973f855cd7e3
+  NMapsMap: 09552eb050059e13b4c8fc294055760713cfdad8
   path_provider_foundation: 2b6b4c569c0fb62ec74538f866245ac84301af46
 
 PODFILE CHECKSUM: e30f02f9d1c72c47bb6344a0a748c9d268180865

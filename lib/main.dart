@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_naver_map/flutter_naver_map.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'package:flutter_config/flutter_config.dart';
+import 'package:flutter/services.dart';
 
 import 'screens/screen_home.dart';
 import 'screens/screen_map.dart';
@@ -9,9 +9,9 @@ import 'screens/screen_naver_map.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized(); // runApp 실행 이전이면 필요
-
   await dotenv.load(fileName: ".env");
-  await FlutterConfig.loadEnvVariables();
+  // iOS로 환경변수 전달
+  await sendEnvToIOS();
 
   await FlutterNaverMap().init(
     clientId: dotenv.env['NAVER_MAP_CLIENT_KEY'],
@@ -30,6 +30,24 @@ void main() async {
   );
 
   runApp(const MyApp());
+}
+
+// iOS로 환경변수 전달하는 함수
+Future<void> sendEnvToIOS() async {
+  try {
+    const platform = MethodChannel('com.moonspace.pj_trip/env');
+
+    final envData = {
+      'googleMapsApiKey': dotenv.env['GOOGLE_MAPS_API_KEY'] ?? '',
+      'naverMapClientKey': dotenv.env['NAVER_MAP_CLIENT_KEY'] ?? '',
+      'naverMapClientSecret': dotenv.env['NAVER_MAP_CLIENT_SECRET'] ?? '',
+    };
+
+    await platform.invokeMethod('setEnvData', envData);
+    debugPrint('환경변수가 iOS로 전달되었습니다.');
+  } catch (e) {
+    debugPrint('iOS 환경변수 전달 중 오류: $e');
+  }
 }
 
 class MyApp extends StatelessWidget {

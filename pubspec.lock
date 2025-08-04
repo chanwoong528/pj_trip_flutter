@@ -102,14 +102,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "9.1.1"
-  flutter_config:
-    dependency: "direct main"
-    description:
-      name: flutter_config
-      sha256: a07e6156bb6e776e29c6357be433155acda87d1dab1a3f787a72091a1b71ffbf
-      url: "https://pub.dev"
-    source: hosted
-    version: "2.0.2"
   flutter_dotenv:
     dependency: "direct main"
     description:
@@ -130,10 +122,10 @@ packages:
     dependency: "direct main"
     description:
       name: flutter_naver_map
-      sha256: "25483baa938ec0b938af9163d65a097ea9c4e497470e756ae0a1ffb63de78e74"
+      sha256: d8ac4d24ed07267949d559b9ba6d7c2e571ffd8ce4b717d0ae63b7f9e0aa623d
       url: "https://pub.dev"
     source: hosted
-    version: "1.4.0"
+    version: "1.4.1+1"
   flutter_plugin_android_lifecycle:
     dependency: transitive
     description:
@@ -180,10 +172,10 @@ packages:
     dependency: transitive
     description:
       name: google_maps_flutter_android
-      sha256: "356ee9c65f38a104f7c4988e6952e52addb3b6cb1601839dd2010d7a502afcf0"
+      sha256: "67745f7850655faa8a596606b627fece63f3011078eaa0c151a4774568c23ac4"
       url: "https://pub.dev"
     source: hosted
-    version: "2.16.2"
+    version: "2.17.0"
   google_maps_flutter_ios:
     dependency: transitive
     description:

@@ -4,7 +4,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter/services.dart';
 
 import 'screens/screen_home.dart';
-import 'screens/screen_map.dart';
+import 'screens/screen_google_map.dart';
 import 'screens/screen_naver_map.dart';
 
 void main() async {
@@ -62,7 +62,7 @@ class MyApp extends StatelessWidget {
       initialRoute: '/',
       routes: {
         '/': (context) => const ScreenHome(),
-        '/map': (context) => const ScreenMap(),
+        '/google_map': (context) => const ScreenGoogleMap(),
         '/naver_map': (context) => const ScreenNaverMap(),
       },
     );

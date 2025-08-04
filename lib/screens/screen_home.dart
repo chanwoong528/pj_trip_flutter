@@ -17,7 +17,7 @@ class _ScreenHomeState extends State<ScreenHome> {
   }
 
   void _navigateToMap() {
-    Navigator.pushNamed(context, '/map');
+    Navigator.pushNamed(context, '/google_map');
   }
 
   void _navigateToNaverMap() {

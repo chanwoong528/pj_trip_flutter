@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:pj_trip/domain/location.dart';
+import 'package:pj_trip/screens/screen_map.dart';
+import 'package:pj_trip/services/service_search.dart';
 
 class ScreenSearch extends StatefulWidget {
   const ScreenSearch({super.key});
@@ -10,6 +13,10 @@ class ScreenSearch extends StatefulWidget {
 class _ScreenSearchState extends State<ScreenSearch> {
   final TextEditingController _searchController = TextEditingController();
   final FocusNode _focusNode = FocusNode();
+  final ServiceSearch _serviceSearch = ServiceSearch();
+
+  List<Location> _searchResults = [];
+  bool _isLoading = false;
 
   @override
   void initState() {
@@ -27,10 +34,26 @@ class _ScreenSearchState extends State<ScreenSearch> {
     super.dispose();
   }
 
-  search() {
+  Future<void> search() async {
     if (_searchController.text.isNotEmpty) {
-      debugPrint('검색어: ${_searchController.text}');
-      //TODO: fetch to naver api
+      setState(() {
+        _isLoading = true;
+      });
+
+      try {
+        final results = await _serviceSearch.searchPlace(
+          _searchController.text,
+        );
+        setState(() {
+          _searchResults = results;
+          _isLoading = false;
+        });
+      } catch (e) {
+        setState(() {
+          _isLoading = false;
+        });
+        debugPrint('검색 오류: $e');
+      }
     }
   }
 
@@ -60,7 +83,7 @@ class _ScreenSearchState extends State<ScreenSearch> {
                     border: InputBorder.none,
                   ),
                   onSubmitted: (value) {
-                    debugPrint('검색어: $value');
+                    search();
                   },
                 ),
               ),
@@ -69,13 +92,8 @@ class _ScreenSearchState extends State<ScreenSearch> {
             SizedBox(
               height: 40,
               width: 40,
-
               child: IconButton(
-                onPressed: () {
-                  if (_searchController.text.isNotEmpty) {
-                    debugPrint('검색어: ${_searchController.text}');
-                  }
-                },
+                onPressed: search,
                 icon: const Icon(Icons.search),
                 padding: EdgeInsets.zero,
               ),
@@ -86,15 +104,58 @@ class _ScreenSearchState extends State<ScreenSearch> {
         foregroundColor: Colors.black,
         elevation: 0,
       ),
-      body: const Padding(
-        padding: EdgeInsets.all(16.0),
-        child: Center(
-          child: Text(
-            '검색 결과가 여기에 표시됩니다',
-            style: TextStyle(fontSize: 16, color: Colors.grey),
-          ),
-        ),
-      ),
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : _searchResults.isEmpty
+          ? const Padding(
+              padding: EdgeInsets.all(16.0),
+              child: Center(
+                child: Text(
+                  '검색 결과가 여기에 표시됩니다',
+                  style: TextStyle(fontSize: 16, color: Colors.grey),
+                ),
+              ),
+            )
+          : ListView.builder(
+              padding: const EdgeInsets.all(16.0),
+              itemCount: _searchResults.length,
+              itemBuilder: (context, index) {
+                final item = _searchResults[index];
+                return Card(
+                  margin: const EdgeInsets.only(bottom: 8.0),
+                  child: ListTile(
+                    title: Text(
+                      item.title,
+                      style: const TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    subtitle: Text(
+                      item.address ?? '주소 없음',
+                      style: const TextStyle(color: Colors.grey),
+                    ),
+                    trailing: const Icon(Icons.add_location, size: 16),
+                    onTap: () {
+                      debugPrint('선택된 장소: ${item.title}');
+                      Navigator.push(
+                        context,
+                        PageRouteBuilder(
+                          pageBuilder:
+                              (context, animation, secondaryAnimation) =>
+                                  ScreenMap(
+                                    isLocationKorea: true,
+                                    location: item,
+                                  ),
+                          transitionsBuilder:
+                              (context, animation, secondaryAnimation, child) {
+                                return child;
+                              },
+                          transitionDuration: Duration.zero,
+                        ),
+                      );
+                    },
+                  ),
+                );
+              },
+            ),
     );
   }
 }

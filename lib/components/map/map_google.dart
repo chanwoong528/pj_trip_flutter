@@ -2,14 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'dart:async';
 
-class ScreenGoogleMap extends StatefulWidget {
-  const ScreenGoogleMap({super.key});
+class MapGoogle extends StatefulWidget {
+  const MapGoogle({super.key});
 
   @override
-  State<ScreenGoogleMap> createState() => _ScreenGoogleMapState();
+  State<MapGoogle> createState() => _MapGoogleState();
 }
 
-class _ScreenGoogleMapState extends State<ScreenGoogleMap> {
+class _MapGoogleState extends State<MapGoogle> {
   final Completer<GoogleMapController> _controller =
       Completer<GoogleMapController>();
 

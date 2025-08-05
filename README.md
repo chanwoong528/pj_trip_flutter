@@ -18,3 +18,9 @@ samples, guidance on mobile development, and a full API reference.
 
 ## Dep
 - flutter config -> 
+
+
+
+
+
+ keytool -exportcert -alias androiddebugkey -keystore ~/.android/debug.keystore | openssl sha1 -binary | openssl base64

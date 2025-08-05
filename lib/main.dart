@@ -4,10 +4,11 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter/services.dart';
 import 'package:geolocator/geolocator.dart';
 
+import 'package:sqflite/sqflite.dart';
+import 'package:path/path.dart';
+
 import 'screens/screen_home.dart';
-import 'screens/screen_google_map.dart';
-import 'screens/screen_naver_map.dart';
-import 'screens/screen_map_wrap.dart';
+import 'screens/screen_map.dart';
 import 'screens/screen_search.dart';
 
 import 'services/service_location.dart';
@@ -17,6 +18,13 @@ void main() async {
   await dotenv.load(fileName: ".env");
   // iOS로 환경변수 전달
   await sendEnvToIOS();
+
+  final database = openDatabase(
+    // Set the path to the database. Note: Using the `join` function from the
+    // `path` package is best practice to ensure the path is correctly
+    // constructed for each platform.
+    join(await getDatabasesPath(), 'travel_database.db'),
+  );
 
   await FlutterNaverMap().init(
     clientId: dotenv.env['NAVER_MAP_CLIENT_KEY'],
@@ -83,13 +91,10 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'Flutter Demo',
       theme: ThemeData(primarySwatch: Colors.blue),
-      initialRoute: '/',
+      initialRoute: '/map',
       routes: {
         '/': (context) => const ScreenHome(),
-        '/map_wrap': (context) =>
-            ScreenMapWrap(isLocationKorea: isLocationKorea),
-        '/google_map': (context) => const ScreenGoogleMap(),
-        '/naver_map': (context) => const ScreenNaverMap(),
+        '/map': (context) => ScreenMap(isLocationKorea: isLocationKorea),
         '/search': (context) => const ScreenSearch(),
       },
       onGenerateRoute: (settings) {

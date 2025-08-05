@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:pj_trip/db/service_db.dart';
 import 'package:pj_trip/domain/location.dart';
 import 'package:pj_trip/screens/screen_map.dart';
 import 'package:pj_trip/services/service_search.dart';
 
 class ScreenSearch extends StatefulWidget {
-  const ScreenSearch({super.key});
+  const ScreenSearch({super.key, required this.tripId});
+
+  final int tripId;
 
   @override
   State<ScreenSearch> createState() => _ScreenSearchState();
@@ -41,7 +44,7 @@ class _ScreenSearchState extends State<ScreenSearch> {
       });
 
       try {
-        final results = await _serviceSearch.searchPlace(
+        final results = await _serviceSearch.searchPlaceKakao(
           _searchController.text,
         );
         setState(() {
@@ -55,6 +58,16 @@ class _ScreenSearchState extends State<ScreenSearch> {
         debugPrint('검색 오류: $e');
       }
     }
+  }
+
+  Future<void> addPlaceToTrip(int tripId, Location place) async {
+    final database = await ServiceDB.getDatabase();
+    await database.insert('place', {
+      'tripId': tripId,
+      'placeName': place.title,
+      'placeLatitude': place.y,
+      'placeLongitude': place.x,
+    });
   }
 
   @override
@@ -135,22 +148,31 @@ class _ScreenSearchState extends State<ScreenSearch> {
                     trailing: const Icon(Icons.add_location, size: 16),
                     onTap: () {
                       debugPrint('선택된 장소: ${item.title}');
-                      Navigator.push(
-                        context,
-                        PageRouteBuilder(
-                          pageBuilder:
-                              (context, animation, secondaryAnimation) =>
-                                  ScreenMap(
-                                    isLocationKorea: true,
-                                    location: item,
-                                  ),
-                          transitionsBuilder:
-                              (context, animation, secondaryAnimation, child) {
-                                return child;
-                              },
-                          transitionDuration: Duration.zero,
-                        ),
-                      );
+                      addPlaceToTrip(widget.tripId, item).then((_) {
+                        // Navigator.pop(context);
+                        Navigator.push(
+                          context,
+                          PageRouteBuilder(
+                            pageBuilder:
+                                (context, animation, secondaryAnimation) =>
+                                    ScreenMap(
+                                      isLocationKorea: true,
+                                      location: item,
+                                      // tripId: widget.tripId,
+                                    ),
+                            transitionsBuilder:
+                                (
+                                  context,
+                                  animation,
+                                  secondaryAnimation,
+                                  child,
+                                ) {
+                                  return child;
+                                },
+                            transitionDuration: Duration.zero,
+                          ),
+                        );
+                      });
                     },
                   ),
                 );

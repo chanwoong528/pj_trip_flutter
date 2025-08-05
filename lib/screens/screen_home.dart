@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:pj_trip/components/ui/home_carousel.dart';
 
 class ScreenHome extends StatefulWidget {
   const ScreenHome({super.key});
@@ -8,14 +9,6 @@ class ScreenHome extends StatefulWidget {
 }
 
 class _ScreenHomeState extends State<ScreenHome> {
-  int _counter = 0;
-
-  void _incrementCounter() {
-    setState(() {
-      _counter++;
-    });
-  }
-
   void _navigateToMap() {
     Navigator.pushNamed(context, '/map');
   }
@@ -25,56 +18,30 @@ class _ScreenHomeState extends State<ScreenHome> {
   }
 
   void addTravel() {
-    setState(() {
-      _counter++;
-    });
+    Navigator.pushNamed(context, '/travel');
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Home')),
-      body: Center(
+      body: SingleChildScrollView(
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            const Text('You have pushed the button this many times:'),
-            Text(
-              '$_counter',
-              style: Theme.of(context).textTheme.headlineMedium,
-            ),
-            ElevatedButton(
-              onPressed: _incrementCounter,
-              child: const Text('Increment'),
-            ),
+          children: [
+            const SizedBox(height: 20),
+            HomeCarousel(),
+            const SizedBox(height: 20),
+            // 여기에 다른 위젯들을 추가할 수 있습니다
           ],
         ),
       ),
-
-      floatingActionButton: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-        children: [
-          FloatingActionButton(
-            onPressed: _navigateToNaverMap,
-            tooltip: 'naver map',
-            child: const Icon(Icons.map),
-          ),
-          FloatingActionButton(
-            heroTag: 'map',
-            onPressed: _navigateToMap,
-            tooltip: 'Map',
-            child: const Icon(Icons.map),
-          ),
-
-          FloatingActionButton(
-            heroTag: 'add',
-            onPressed: _incrementCounter,
-            tooltip: 'Map',
-            child: const Icon(Icons.add),
-          ),
-        ],
+      floatingActionButton: FloatingActionButton(
+        heroTag: 'add',
+        onPressed: addTravel,
+        tooltip: 'Add Travel',
+        child: const Icon(Icons.add),
       ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
+      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
     );
   }
 }

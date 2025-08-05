@@ -20,6 +20,21 @@ class Location {
     );
   }
 
+  factory Location.nominatimFromJson(Map<String, dynamic> json) {
+    return Location(
+      address: json['address']['country'] ?? '',
+      title:
+          json['address']['city'] ??
+          json['address']['province'] ??
+          json['address']['state'] ??
+          json['address']['country'] ??
+          json['address']['country_code'] ??
+          '',
+      x: double.parse(json['lon'] ?? '0'),
+      y: double.parse(json['lat'] ?? '0'),
+    );
+  }
+
   /**
 
 kakao  response

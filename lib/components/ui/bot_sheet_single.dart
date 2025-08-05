@@ -1,10 +1,26 @@
 import 'package:flutter/material.dart';
+import 'package:pj_trip/db/service_db.dart';
 import 'package:pj_trip/domain/location.dart';
 
 class BotSheetSingle extends StatelessWidget {
-  const BotSheetSingle({super.key, required this.location});
+  const BotSheetSingle({
+    super.key,
+    required this.location,
+    required this.tripId,
+  });
 
   final Location location;
+  final int tripId;
+
+  Future<void> _addPlaceToTrip(int tripId, Location place) async {
+    final database = await ServiceDB.getDatabase();
+    await database.insert('place', {
+      'tripId': tripId,
+      'placeName': place.title,
+      'placeLatitude': place.y,
+      'placeLongitude': place.x,
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -84,7 +100,8 @@ class BotSheetSingle extends StatelessWidget {
                 Expanded(
                   child: ElevatedButton.icon(
                     onPressed: () {
-                      // 저장 기능
+                      _addPlaceToTrip(tripId, location);
+                      Navigator.pop(context);
                     },
                     icon: const Icon(Icons.bookmark_border),
                     label: const Text('저장'),

@@ -4,14 +4,13 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter/services.dart';
 import 'package:geolocator/geolocator.dart';
 
-import 'package:sqflite/sqflite.dart';
-import 'package:path/path.dart';
-
 import 'screens/screen_home.dart';
 import 'screens/screen_map.dart';
 import 'screens/screen_search.dart';
+import 'screens/screen_travel.dart';
 
 import 'services/service_location.dart';
+import 'db/service_db.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized(); // runApp 실행 이전이면 필요
@@ -19,12 +18,8 @@ void main() async {
   // iOS로 환경변수 전달
   await sendEnvToIOS();
 
-  final database = openDatabase(
-    // Set the path to the database. Note: Using the `join` function from the
-    // `path` package is best practice to ensure the path is correctly
-    // constructed for each platform.
-    join(await getDatabasesPath(), 'travel_database.db'),
-  );
+  final database = await ServiceDB.getDatabase();
+  await ServiceDB.initTables(database);
 
   await FlutterNaverMap().init(
     clientId: dotenv.env['NAVER_MAP_CLIENT_KEY'],
@@ -91,17 +86,18 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'Flutter Demo',
       theme: ThemeData(primarySwatch: Colors.blue),
-      initialRoute: '/map',
+      initialRoute: '/',
       routes: {
         '/': (context) => const ScreenHome(),
+        '/travel': (context) => const ScreenTravel(),
         '/map': (context) => ScreenMap(isLocationKorea: isLocationKorea),
-        '/search': (context) => const ScreenSearch(),
+        '/search': (context) => const ScreenSearch(tripId: 0),
       },
       onGenerateRoute: (settings) {
         if (settings.name == '/search') {
           return PageRouteBuilder(
             pageBuilder: (context, animation, secondaryAnimation) =>
-                const ScreenSearch(),
+                ScreenSearch(tripId: settings.arguments as int),
             transitionsBuilder:
                 (context, animation, secondaryAnimation, child) {
                   return child;

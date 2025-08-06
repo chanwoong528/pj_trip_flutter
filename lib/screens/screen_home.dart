@@ -5,6 +5,7 @@ import 'package:pj_trip/components/ui/home_carousel.dart';
 import 'package:pj_trip/db/service_db.dart';
 import 'package:pj_trip/screens/screen_map.dart';
 import 'package:pj_trip/blocs/camera/camera_bloc.dart';
+import 'package:pj_trip/blocs/location/location_bloc.dart';
 import 'package:pj_trip/domain/location.dart';
 
 class ScreenHome extends StatefulWidget {
@@ -77,6 +78,26 @@ class _ScreenHomeState extends State<ScreenHome> {
       }).toList();
     }
 
+    // debugPrint('trips: ${trips[0]}');
+
+    // Travel 좌표로 카메라 이동
+    if (travel['placeLatitude'] != null && travel['placeLongitude'] != null) {
+      final travelLocation = Location(
+        title: travel['placeName'] ?? 'Travel Location',
+        address: travel['placeName'] ?? '',
+        x: travel['placeLongitude'].toDouble(),
+        y: travel['placeLatitude'].toDouble(),
+      );
+
+      // BLoC을 통해 카메라 이동
+      context.read<CameraBloc>().moveToLocation(travelLocation, zoom: 12.0);
+      context.read<LocationBloc>().selectLocation(travelLocation);
+
+      debugPrint(
+        'Home: Moving camera to travel location: ${travelLocation.x}, ${travelLocation.y}',
+      );
+    }
+
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -87,7 +108,9 @@ class _ScreenHomeState extends State<ScreenHome> {
   }
 
   void addTravel() {
-    Navigator.pushNamed(context, '/travel');
+    Navigator.pushNamed(context, '/travel').then((_) {
+      _loadData();
+    });
   }
 
   Future<void> _deleteTravel(Map<String, dynamic> travel) async {
@@ -239,30 +262,6 @@ class _ScreenHomeState extends State<ScreenHome> {
         mainAxisAlignment: MainAxisAlignment.end,
         children: [
           // 카메라 제어 버튼들
-          FloatingActionButton(
-            heroTag: 'camera_seoul',
-            onPressed: () {
-              context.read<CameraBloc>().moveTo(37.5665, 126.9780, zoom: 12.0);
-              ScaffoldMessenger.of(
-                context,
-              ).showSnackBar(const SnackBar(content: Text('서울로 카메라 이동')));
-            },
-            tooltip: 'Move to Seoul',
-            child: const Icon(Icons.location_on),
-          ),
-          const SizedBox(height: 10),
-          FloatingActionButton(
-            heroTag: 'camera_busan',
-            onPressed: () {
-              context.read<CameraBloc>().moveTo(35.1796, 129.0756, zoom: 12.0);
-              ScaffoldMessenger.of(
-                context,
-              ).showSnackBar(const SnackBar(content: Text('부산으로 카메라 이동')));
-            },
-            tooltip: 'Move to Busan',
-            child: const Icon(Icons.location_city),
-          ),
-          const SizedBox(height: 10),
           FloatingActionButton(
             heroTag: 'add',
             onPressed: addTravel,

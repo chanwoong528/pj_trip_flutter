@@ -47,8 +47,8 @@ Location getAvgCenterLocation(List<Map<String, dynamic>> places) {
   int validCount = 0;
 
   for (final place in places) {
-    final lat = (place['placeLatitude'] as num?)?.toDouble() ?? 0.0;
-    final lng = (place['placeLongitude'] as num?)?.toDouble() ?? 0.0;
+    final lat = (place['placeLatitude'] as num?)?.toDouble() ?? 37.5;
+    final lng = (place['placeLongitude'] as num?)?.toDouble() ?? 127.0;
 
     if (lat != 0.0 && lng != 0.0) {
       totalLat += lat;

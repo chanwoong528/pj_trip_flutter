@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:equatable/equatable.dart';
 import 'package:pj_trip/domain/location.dart';
@@ -87,6 +88,9 @@ class CameraBloc extends Bloc<CameraEvent, CameraState> {
     CameraMoveToLocation event,
     Emitter<CameraState> emit,
   ) {
+    debugPrint(
+      'CameraMoveToLocation: ${event.location.x}, ${event.location.y}',
+    );
     emit(CameraPosition(location: event.location, zoom: event.zoom ?? 13.5));
   }
 

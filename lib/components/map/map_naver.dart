@@ -4,7 +4,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:pj_trip/domain/location.dart';
 import 'package:pj_trip/blocs/camera/camera_bloc.dart';
 import 'package:pj_trip/blocs/location/location_bloc.dart';
-import 'package:pj_trip/utils/camera_math.dart';
 import 'package:pj_trip/utils/util.dart';
 
 class MapNaver extends StatefulWidget {
@@ -20,7 +19,7 @@ class MapNaver extends StatefulWidget {
 class _MapNaverState extends State<MapNaver> {
   NaverMapController? _mapController;
 
-  List<NMarker> _placeMarkers = [];
+  final List<NMarker> _placeMarkers = [];
 
   @override
   void initState() {
@@ -108,20 +107,9 @@ class _MapNaverState extends State<MapNaver> {
               ? locationState.selectedLocation
               : widget.location;
 
-          debugPrint(
-            '=== MapNaver > build > centerPosition ===\n${widget.places?.length}',
-          );
-
           final centerPosition = NLatLng(
             selectedLocation?.y.toDouble() ?? 34.0,
             selectedLocation?.x.toDouble() ?? 126.0,
-          );
-
-          debugPrint(
-            '=== MapNaver > build > centerPosition ===\n${selectedLocation?.y.toDouble() ?? 34.0}',
-          );
-          debugPrint(
-            '=== MapNaver > build > centerPosition ===\n${selectedLocation?.x.toDouble() ?? 126.0}',
           );
 
           final cameraPosition = NCameraPosition(
@@ -133,7 +121,15 @@ class _MapNaverState extends State<MapNaver> {
           return BlocListener<CameraBloc, CameraState>(
             listener: (context, state) {
               if (state is CameraPosition && _mapController != null) {
-                _updateCameraFromBloc(state);
+                debugPrint(
+                  'CameraState: ${state.location.x}, ${state.location.y}',
+                );
+                // 지연을 두어 맵 컨트롤러가 준비될 때까지 기다림
+                Future.delayed(const Duration(milliseconds: 50), () {
+                  if (mounted && _mapController != null) {
+                    _updateCameraFromBloc(state);
+                  }
+                });
               }
             },
             child: Scaffold(
@@ -144,7 +140,16 @@ class _MapNaverState extends State<MapNaver> {
                 ),
                 onMapReady: (controller) {
                   _mapController = controller;
+                  debugPrint('Map controller ready');
                   _updatePlaceMarkers();
+
+                  // 맵이 준비되면 현재 카메라 상태 확인
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    final cameraState = context.read<CameraBloc>().state;
+                    if (cameraState is CameraPosition && mounted) {
+                      _updateCameraFromBloc(cameraState);
+                    }
+                  });
                 },
               ),
             ),
@@ -176,4 +181,27 @@ class _MapNaverState extends State<MapNaver> {
       debugPrint('Error updating camera from BLoC: $e');
     }
   }
+
+  // void _moveCameraToLocation(Location location, {double zoom = 14.0}) {
+  //   if (_mapController == null) return;
+
+  //   try {
+  //     final centerPosition = NLatLng(
+  //       location.y.toDouble(),
+  //       location.x.toDouble(),
+  //     );
+
+  //     final cameraUpdate = NCameraUpdate.withParams(
+  //       target: centerPosition,
+  //       zoom: zoom,
+  //     );
+
+  //     _mapController!.updateCamera(cameraUpdate);
+  //     debugPrint(
+  //       'Direct camera move to: ${location.title} at (${location.x}, ${location.y}) with zoom: $zoom',
+  //     );
+  //   } catch (e) {
+  //     debugPrint('Error moving camera directly: $e');
+  //   }
+  // }
 }

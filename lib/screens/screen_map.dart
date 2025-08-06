@@ -115,13 +115,14 @@ class _ScreenMapState extends State<ScreenMap> with TickerProviderStateMixin {
     // final initialLocation =
     //     widget.location ??
     //     Location(
-    //       title: '서울특별시 광화문',
-    //       address: '서울특별시 광화문',
-    //       x: 126.97829,
-    //       y: 37.5666,
+    //       title: '',
+    //       address: '',
+    //       x: widget.travel?['placeLongitude']?.toDouble() ?? 126.97829,
+    //       y: widget.travel?['placeLatitude']?.toDouble() ?? 37.5666,
     //     );
 
     // context.read<LocationBloc>().selectLocation(initialLocation);
+    // context.read<CameraBloc>().moveToLocation(initialLocation);
   }
 
   void _initializeTabController() {
@@ -178,6 +179,28 @@ class _ScreenMapState extends State<ScreenMap> with TickerProviderStateMixin {
   void _loadInitialData() {
     if (widget.trips != null && widget.trips!.isNotEmpty) {
       _loadPlacesForCurrentTab();
+    } else {
+      // trips가 없으면 travel 위치로 카메라 이동
+      // _moveCameraToTravelLocation();
+    }
+  }
+
+  void _moveCameraToTravelLocation() {
+    if (widget.travel != null) {
+      final travelLocation = Location(
+        title: widget.travel!['placeName'] ?? 'Travel Location',
+        address: widget.travel!['placeName'] ?? '',
+        x: widget.travel!['placeLongitude']?.toDouble() ?? 126.97829,
+        y: widget.travel!['placeLatitude']?.toDouble() ?? 37.5666,
+      );
+
+      if (mounted) {
+        context.read<CameraBloc>().moveToLocation(travelLocation, zoom: 12.0);
+      }
+
+      debugPrint(
+        'Initial: Moving camera to travel location: ${travelLocation.x}, ${travelLocation.y}',
+      );
     }
   }
 
@@ -207,6 +230,12 @@ class _ScreenMapState extends State<ScreenMap> with TickerProviderStateMixin {
           // 탭 변경으로 인한 장소 목록 업데이트인 경우 카메라 이동
           if (_places.isNotEmpty) {
             _moveCameraToCurrentTabPlaces();
+          } else {
+            // 장소가 없으면 travel 좌표로 카메라 이동
+            debugPrint(
+              'No places found for trip $tripId, using travel coordinates',
+            );
+            // _moveCameraToTravelLocation();
           }
         }
       }
@@ -216,6 +245,8 @@ class _ScreenMapState extends State<ScreenMap> with TickerProviderStateMixin {
         setState(() {
           _places = [];
         });
+        // 에러 발생 시에도 travel 좌표로 카메라 이동
+        // _moveCameraToTravelLocation();
       }
     }
   }
@@ -301,18 +332,44 @@ class _ScreenMapState extends State<ScreenMap> with TickerProviderStateMixin {
   }
 
   void _moveCameraToCurrentTabPlaces() {
-    if (_places.isEmpty) return;
+    if (_places.isNotEmpty) {
+      // 현재 탭의 장소들의 중심점과 줌 계산
+      final avgCenterLocation = getAvgCenterLocation(_places);
+      final zoom = getZoomFromPlaces(_places);
 
-    // 현재 탭의 장소들의 중심점과 줌 계산
-    final avgCenterLocation = getAvgCenterLocation(_places);
-    final zoom = getZoomFromPlaces(_places);
+      // BLoC을 통해 카메라 이동
+      if (mounted) {
+        context.read<CameraBloc>().moveToLocation(
+          avgCenterLocation,
+          zoom: zoom,
+        );
+      }
 
-    // 카메라 이동
-    context.read<CameraBloc>().moveToLocation(avgCenterLocation, zoom: zoom);
+      debugPrint(
+        'Tab changed: Moving camera to ${avgCenterLocation.x}, ${avgCenterLocation.y} places',
+      );
+    } else {
+      // 장소가 없으면 travel 데이터를 사용하여 카메라 이동
+      if (widget.travel != null) {
+        debugPrint('widget.travel: ${widget.travel}');
+        final travelLocation = Location(
+          title: widget.travel!['placeName'] ?? 'Travel Location',
+          address: widget.travel!['placeName'] ?? '',
+          x: widget.travel!['placeLongitude']?.toDouble() ?? 126.97829,
+          y: widget.travel!['placeLatitude']?.toDouble() ?? 37.5666,
+        );
 
-    debugPrint(
-      'Tab changed: Moving camera to ${avgCenterLocation.x}, ${avgCenterLocation.y} places',
-    );
+        if (mounted) {
+          context.read<CameraBloc>().moveToLocation(travelLocation, zoom: 12.0);
+        }
+
+        debugPrint(
+          'Tab changed: No places, moving camera to travel location: ${travelLocation.x}, ${travelLocation.y}',
+        );
+      } else {
+        debugPrint('No travel data available for camera movement');
+      }
+    }
   }
 
   Future<void> _removePlaceFromTrip(int placeId) async {
@@ -351,6 +408,7 @@ class _ScreenMapState extends State<ScreenMap> with TickerProviderStateMixin {
                           ? MapNaver(
                               location: selectedLocation,
                               places: _places,
+                              key: ValueKey('map_naver_$_currentTabIndex'),
                             )
                           : const MapGoogle(),
                     ),
@@ -466,7 +524,7 @@ class _ScreenMapState extends State<ScreenMap> with TickerProviderStateMixin {
                                 // const SizedBox(width: 100),
                                 Text(
                                   selectedLocation != null
-                                      ? selectedLocation!.title
+                                      ? selectedLocation.title
                                       : '장소를 검색하세요',
                                   style: TextStyle(
                                     color: selectedLocation != null

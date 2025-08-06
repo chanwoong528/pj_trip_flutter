@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:pj_trip/db/service_db.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:pj_trip/domain/location.dart';
-import 'package:pj_trip/screens/screen_map.dart';
 import 'package:pj_trip/services/service_search.dart';
+import 'package:pj_trip/blocs/location/location_bloc.dart';
 
 class ScreenSearch extends StatefulWidget {
   const ScreenSearch({super.key, required this.tripId});
@@ -60,15 +60,15 @@ class _ScreenSearchState extends State<ScreenSearch> {
     }
   }
 
-  Future<void> addPlaceToTrip(int tripId, Location place) async {
-    final database = await ServiceDB.getDatabase();
-    await database.insert('place', {
-      'tripId': tripId,
-      'placeName': place.title,
-      'placeLatitude': place.y,
-      'placeLongitude': place.x,
-    });
-  }
+  // Future<void> addPlaceToTrip(int tripId, Location place) async {
+  //   final database = await ServiceDB.getDatabase();
+  //   await database.insert('place', {
+  //     'tripId': tripId,
+  //     'placeName': place.title,
+  //     'placeLatitude': place.y,
+  //     'placeLongitude': place.x,
+  //   });
+  // }
 
   @override
   Widget build(BuildContext context) {
@@ -148,30 +148,13 @@ class _ScreenSearchState extends State<ScreenSearch> {
                     trailing: const Icon(Icons.add_location, size: 16),
                     onTap: () {
                       debugPrint('선택된 장소: ${item.title}');
-                      addPlaceToTrip(widget.tripId, item).then((_) {
-                        // Navigator.pop(context);
-                        Navigator.push(
-                          context,
-                          PageRouteBuilder(
-                            pageBuilder:
-                                (context, animation, secondaryAnimation) =>
-                                    ScreenMap(
-                                      isLocationKorea: true,
-                                      location: item,
-                                      // tripId: widget.tripId,
-                                    ),
-                            transitionsBuilder:
-                                (
-                                  context,
-                                  animation,
-                                  secondaryAnimation,
-                                  child,
-                                ) {
-                                  return child;
-                                },
-                            transitionDuration: Duration.zero,
-                          ),
-                        );
+
+                      // LocationBloc에 선택된 위치 전달
+                      context.read<LocationBloc>().selectLocation(item);
+
+                      Navigator.pop(context, {
+                        'isLocationKorea': true,
+                        'location': item,
                       });
                     },
                   ),

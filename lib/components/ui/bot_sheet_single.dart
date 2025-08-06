@@ -101,7 +101,10 @@ class BotSheetSingle extends StatelessWidget {
                   child: ElevatedButton.icon(
                     onPressed: () {
                       _addPlaceToTrip(tripId, location);
-                      Navigator.pop(context);
+                      Navigator.pop(context, {
+                        'isLocationKorea': true,
+                        'location': location,
+                      });
                     },
                     icon: const Icon(Icons.bookmark_border),
                     label: const Text('저장'),

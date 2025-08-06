@@ -35,6 +35,30 @@ class Location {
     );
   }
 
+  factory Location.fromMap(Map<String, dynamic> map) {
+    return Location(
+      address: map['address'] ?? '',
+      title: map['title'] ?? '',
+      x: map['x'] ?? 0,
+      y: map['y'] ?? 0,
+    );
+  }
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    return other is Location &&
+        other.address == address &&
+        other.title == title &&
+        other.x == x &&
+        other.y == y;
+  }
+
+  @override
+  int get hashCode {
+    return address.hashCode ^ title.hashCode ^ x.hashCode ^ y.hashCode;
+  }
+
   /**
 
 kakao  response

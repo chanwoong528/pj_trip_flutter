@@ -3,6 +3,7 @@ import 'package:flutter_naver_map/flutter_naver_map.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter/services.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'screens/screen_home.dart';
 import 'screens/screen_map.dart';
@@ -11,6 +12,8 @@ import 'screens/screen_travel.dart';
 
 import 'services/service_location.dart';
 import 'db/service_db.dart';
+import 'blocs/camera/camera_bloc.dart';
+import 'blocs/location/location_bloc.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized(); // runApp 실행 이전이면 필요
@@ -83,30 +86,40 @@ class MyApp extends StatelessWidget {
   // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Flutter Demo',
-      theme: ThemeData(primarySwatch: Colors.blue),
-      initialRoute: '/',
-      routes: {
-        '/': (context) => const ScreenHome(),
-        '/travel': (context) => const ScreenTravel(),
-        '/map': (context) => ScreenMap(isLocationKorea: isLocationKorea),
-        '/search': (context) => const ScreenSearch(tripId: 0),
-      },
-      onGenerateRoute: (settings) {
-        if (settings.name == '/search') {
-          return PageRouteBuilder(
-            pageBuilder: (context, animation, secondaryAnimation) =>
-                ScreenSearch(tripId: settings.arguments as int),
-            transitionsBuilder:
-                (context, animation, secondaryAnimation, child) {
-                  return child;
-                },
-            transitionDuration: Duration.zero,
-          );
-        }
-        return null;
-      },
+    return MultiBlocProvider(
+      providers: [
+        BlocProvider<CameraBloc>(create: (context) => CameraBloc()),
+        BlocProvider<LocationBloc>(create: (context) => LocationBloc()),
+        // 여기에 다른 BLoC들도 추가할 수 있습니다
+        // BlocProvider<OtherBloc>(
+        //   create: (context) => OtherBloc(),
+        // ),
+      ],
+      child: MaterialApp(
+        title: 'Flutter Demo',
+        theme: ThemeData(primarySwatch: Colors.blue),
+        initialRoute: '/',
+        routes: {
+          '/': (context) => const ScreenHome(),
+          '/travel': (context) => const ScreenTravel(),
+          '/map': (context) => ScreenMap(isLocationKoreaProps: isLocationKorea),
+          '/search': (context) => const ScreenSearch(tripId: 0),
+        },
+        onGenerateRoute: (settings) {
+          if (settings.name == '/search') {
+            return PageRouteBuilder(
+              pageBuilder: (context, animation, secondaryAnimation) =>
+                  ScreenSearch(tripId: settings.arguments as int),
+              transitionsBuilder:
+                  (context, animation, secondaryAnimation, child) {
+                    return child;
+                  },
+              transitionDuration: Duration.zero,
+            );
+          }
+          return null;
+        },
+      ),
     );
   }
 }

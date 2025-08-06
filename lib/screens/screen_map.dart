@@ -1,16 +1,22 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:pj_trip/db/service_db.dart';
 import 'package:pj_trip/domain/location.dart';
 import 'package:pj_trip/components/map/map_google.dart';
 import 'package:pj_trip/components/map/map_naver.dart';
 import 'package:pj_trip/screens/screen_search.dart';
 import 'package:pj_trip/components/ui/bot_sheet_single.dart';
+import 'package:pj_trip/blocs/camera/camera_bloc.dart';
+import 'package:pj_trip/blocs/location/location_bloc.dart';
+
+import 'package:pj_trip/utils/camera_math.dart';
+import 'package:pj_trip/utils/util.dart';
 
 // 탭 내용을 위한 별도 위젯
 class TripDayContent extends StatelessWidget {
   final Map<String, dynamic> trip;
   final List<Map<String, dynamic>> places;
-  final VoidCallback? onRemovePlace;
+  final Function(int)? onRemovePlace;
 
   const TripDayContent({
     super.key,
@@ -22,39 +28,26 @@ class TripDayContent extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            '${trip['tripOrder']}일차',
-            style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 16),
-
           if (places.isNotEmpty) ...[
-            Text(
-              '방문할 장소들:',
-              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
-            ),
-            const SizedBox(height: 8),
             Expanded(
               child: ListView.builder(
                 itemCount: places.length,
                 itemBuilder: (context, index) {
                   final place = places[index];
-                  debugPrint(
-                    'place@@@@@@@@@@ ########### : $place $index $places',
-                  );
+
                   return Card(
                     margin: const EdgeInsets.only(bottom: 8),
                     child: ListTile(
                       leading: const Icon(Icons.location_on),
                       title: Text(place['placeName'] ?? ''),
-                      subtitle: Text(place['placeAddress'] ?? ''),
+                      subtitle: Text(place['tripId'].toString() ?? ''),
                       trailing: IconButton(
                         icon: const Icon(Icons.delete, color: Colors.red),
-                        onPressed: () => onRemovePlace?.call(),
+                        onPressed: () => onRemovePlace!(place['id']),
                       ),
                     ),
                   );
@@ -92,13 +85,13 @@ class TripDayContent extends StatelessWidget {
 class ScreenMap extends StatefulWidget {
   const ScreenMap({
     super.key,
-    required this.isLocationKorea,
+    required this.isLocationKoreaProps,
     this.location,
     this.travel,
     this.trips,
   });
 
-  final bool isLocationKorea;
+  final bool isLocationKoreaProps;
   final Location? location;
   final Map<String, dynamic>? travel;
   final List<Map<String, dynamic>>? trips;
@@ -110,8 +103,6 @@ class ScreenMap extends StatefulWidget {
 class _ScreenMapState extends State<ScreenMap> with TickerProviderStateMixin {
   TabController? _tabController;
   int _currentTabIndex = 0;
-  // 각 탭별로 장소를 캐시하는 Map
-  final Map<int, List<Map<String, dynamic>>> _placesCache = {};
   var _places = <Map<String, dynamic>>[];
 
   @override
@@ -119,11 +110,22 @@ class _ScreenMapState extends State<ScreenMap> with TickerProviderStateMixin {
     super.initState();
     _initializeTabController();
     _loadInitialData();
+
+    // 초기 위치 설정
+    // final initialLocation =
+    //     widget.location ??
+    //     Location(
+    //       title: '서울특별시 광화문',
+    //       address: '서울특별시 광화문',
+    //       x: 126.97829,
+    //       y: 37.5666,
+    //     );
+
+    // context.read<LocationBloc>().selectLocation(initialLocation);
   }
 
   void _initializeTabController() {
     if (widget.trips == null || widget.trips!.isEmpty) {
-      debugPrint('No trips available for TabController');
       return;
     }
 
@@ -131,7 +133,6 @@ class _ScreenMapState extends State<ScreenMap> with TickerProviderStateMixin {
       _tabController = TabController(length: widget.trips!.length, vsync: this);
 
       _tabController!.addListener(_onTabChanged);
-      debugPrint('TabController initialized with ${widget.trips!.length} tabs');
     } catch (e) {
       debugPrint('Failed to initialize TabController: $e');
       _tabController = null;
@@ -163,22 +164,18 @@ class _ScreenMapState extends State<ScreenMap> with TickerProviderStateMixin {
     if (widget.trips == null ||
         newIndex < 0 ||
         newIndex >= widget.trips!.length) {
-      debugPrint('Invalid tab index: $newIndex');
       return;
     }
 
-    setState(() {
-      _currentTabIndex = newIndex;
-    });
-
-    _loadPlacesForCurrentTab();
+    if (mounted) {
+      setState(() {
+        _currentTabIndex = newIndex;
+      });
+      _loadPlacesForCurrentTab();
+    }
   }
 
   void _loadInitialData() {
-    debugPrint(
-      'Loading initial data - travel: ${widget.travel}, trips: ${widget.trips}',
-    );
-
     if (widget.trips != null && widget.trips!.isNotEmpty) {
       _loadPlacesForCurrentTab();
     }
@@ -190,25 +187,11 @@ class _ScreenMapState extends State<ScreenMap> with TickerProviderStateMixin {
       debugPrint('Cannot load places: invalid trip index $_currentTabIndex');
       return;
     }
-
-    // 캐시에 있으면 바로 사용
-    if (_placesCache.containsKey(tripId)) {
-      setState(() {
-        _places = _placesCache[tripId]!;
-      });
-      debugPrint(
-        'Using cached places for trip $tripId: ${_places.length} places',
-      );
-      return;
-    }
-
-    // 캐시에 없으면 로드
     _getPlacesByTrip(tripId);
   }
 
   Future<void> _getPlacesByTrip(int tripId) async {
     if (tripId <= 0) return;
-
     try {
       final database = await ServiceDB.getDatabase();
       final places = await database.query(
@@ -216,20 +199,20 @@ class _ScreenMapState extends State<ScreenMap> with TickerProviderStateMixin {
         where: 'tripId = ?',
         whereArgs: [tripId],
       );
-
-      debugPrint('Loaded ${places.length} places for trip $tripId');
-
       if (mounted) {
-        // 캐시에 저장하고 현재 탭에 표시
-        _placesCache[tripId] = places;
-        setState(() {
-          _places = places;
-        });
+        if (!isListSame(places, _places)) {
+          setState(() {
+            _places = places;
+          });
+          // 탭 변경으로 인한 장소 목록 업데이트인 경우 카메라 이동
+          if (_places.isNotEmpty) {
+            _moveCameraToCurrentTabPlaces();
+          }
+        }
       }
     } catch (e) {
       debugPrint('Error loading places for trip $tripId: $e');
       if (mounted) {
-        _placesCache[tripId] = [];
         setState(() {
           _places = [];
         });
@@ -237,35 +220,31 @@ class _ScreenMapState extends State<ScreenMap> with TickerProviderStateMixin {
     }
   }
 
-  void _showLocationBottomSheet() {
-    if (widget.location == null) {
-      debugPrint('Cannot show location bottom sheet: no location');
-      return;
-    }
-
+  Future<void> _showLocationBottomSheet(Location location) async {
     final tripId = _getCurrentTripId();
     if (tripId == null) {
       debugPrint('Cannot show location bottom sheet: invalid trip data');
       return;
     }
 
-    showModalBottomSheet(
+    var result = await showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) =>
-          BotSheetSingle(location: widget.location!, tripId: tripId),
+      builder: (context) => BotSheetSingle(location: location, tripId: tripId),
     );
+
+    // 바텀시트에서 장소가 추가/삭제되었을 수 있으므로 장소 목록 새로고침
+    if (result != null) {
+      _loadPlacesForCurrentTab();
+    }
   }
 
-  void _navigateToSearch() {
+  void _navigateToSearch() async {
     final tripId = _getCurrentTripId();
-    if (tripId == null) {
-      debugPrint('Cannot navigate to search: invalid trip data');
-      return;
-    }
+    if (tripId == null) return;
 
-    Navigator.push(
+    final result = await Navigator.push(
       context,
       PageRouteBuilder(
         pageBuilder: (context, animation, secondaryAnimation) =>
@@ -275,17 +254,72 @@ class _ScreenMapState extends State<ScreenMap> with TickerProviderStateMixin {
         },
         transitionDuration: Duration.zero,
       ),
-    ).then((_) {
-      debugPrint('Returned from ScreenSearch, reloading places');
-      // 캐시를 무효화하고 다시 로드
-      _placesCache.remove(tripId);
-      _loadPlacesForCurrentTab();
-    });
+    );
+
+    // 검색 결과가 있으면 처리
+    if (result != null && result is Map<String, dynamic>) {
+      final locationData = result['location'];
+      if (locationData != null) {
+        // Location 객체를 Map으로 변환하여 전달받은 경우 처리
+        Map<String, dynamic> locationMap;
+        if (locationData is Location) {
+          locationMap = {
+            'title': locationData.title,
+            'address': locationData.address,
+            'x': locationData.x,
+            'y': locationData.y,
+          };
+        } else if (locationData is Map<String, dynamic>) {
+          locationMap = locationData;
+        } else {
+          debugPrint('Unknown location data type: ${locationData.runtimeType}');
+          return;
+        }
+
+        // 여기서 선택된 위치 정보를 처리할 수 있습니다
+        // 예: 지도에 마커 추가, 위치 정보 저장 등
+
+        // 선택된 위치를 지도에 표시하기 위해 Location 객체 생성
+        final selectedLocation = Location(
+          title: locationMap['title'],
+          address: locationMap['address'],
+          x: locationMap['x'],
+          y: locationMap['y'],
+        );
+
+        // LocationBloc에 선택된 위치 전달
+        if (mounted) {
+          context.read<LocationBloc>().selectLocation(selectedLocation);
+          context.read<CameraBloc>().moveToLocation(selectedLocation, zoom: 14);
+          _showLocationBottomSheet(selectedLocation);
+        }
+      }
+    }
+
+    debugPrint('Returned from ScreenSearch');
+    // 장소 목록은 바텀시트에서 처리하므로 여기서는 새로고침하지 않음
+  }
+
+  void _moveCameraToCurrentTabPlaces() {
+    if (_places.isEmpty) return;
+
+    // 현재 탭의 장소들의 중심점과 줌 계산
+    final avgCenterLocation = getAvgCenterLocation(_places);
+    final zoom = getZoomFromPlaces(_places);
+
+    // 카메라 이동
+    context.read<CameraBloc>().moveToLocation(avgCenterLocation, zoom: zoom);
+
+    debugPrint(
+      'Tab changed: Moving camera to ${avgCenterLocation.x}, ${avgCenterLocation.y} places',
+    );
   }
 
   Future<void> _removePlaceFromTrip(int placeId) async {
     debugPrint('Removing place: $placeId');
-    // TODO: 장소 삭제 기능 구현
+    final database = await ServiceDB.getDatabase();
+    await database.delete('place', where: 'id = ?', whereArgs: [placeId]);
+    _loadPlacesForCurrentTab();
   }
 
   @override
@@ -296,143 +330,164 @@ class _ScreenMapState extends State<ScreenMap> with TickerProviderStateMixin {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: Stack(
-        children: [
-          // 배경 지도
-          Positioned.fill(
-            child: Column(
-              children: [
-                Expanded(
-                  child: widget.isLocationKorea
-                      ? MapNaver(location: widget.location)
-                      : const MapGoogle(),
-                ),
+    return BlocBuilder<LocationBloc, LocationState>(
+      builder: (context, locationState) {
+        final selectedLocation = locationState is LocationLoaded
+            ? locationState.selectedLocation
+            : null;
+        final isLocationKorea = locationState is LocationLoaded
+            ? locationState.isLocationKorea
+            : widget.isLocationKoreaProps;
 
-                // 탭이 있는 바텀시트
-                if (widget.trips != null &&
-                    widget.trips!.isNotEmpty &&
-                    _tabController != null) ...[
-                  Container(
-                    height: MediaQuery.of(context).size.height * 0.6,
-                    decoration: const BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.only(
-                        topLeft: Radius.circular(20),
-                        topRight: Radius.circular(20),
-                      ),
+        return Scaffold(
+          body: Stack(
+            children: [
+              // 배경 지도
+              Positioned.fill(
+                child: Column(
+                  children: [
+                    Expanded(
+                      child: isLocationKorea
+                          ? MapNaver(
+                              location: selectedLocation,
+                              places: _places,
+                            )
+                          : const MapGoogle(),
                     ),
-                    child: Column(
-                      children: [
-                        // 드래그 핸들
-                        Container(
-                          margin: const EdgeInsets.only(top: 8),
-                          width: 40,
-                          height: 4,
-                          decoration: BoxDecoration(
-                            color: Colors.grey[300],
-                            borderRadius: BorderRadius.circular(2),
-                          ),
-                        ),
-                        // 탭바
-                        SizedBox(
-                          height: 50,
-                          child: TabBar(
-                            controller: _tabController!,
-                            labelColor: Colors.blue,
-                            unselectedLabelColor: Colors.grey,
-                            indicatorColor: Colors.blue,
-                            tabs: widget.trips!.map((trip) {
-                              return Tab(text: '${trip['tripOrder']}일차');
-                            }).toList(),
-                          ),
-                        ),
-                        // 탭뷰
-                        Expanded(
-                          child: TabBarView(
-                            controller: _tabController!,
-                            children: widget.trips!.map((trip) {
-                              return TripDayContent(
-                                trip: trip,
-                                places: _places,
-                                onRemovePlace: () => _removePlaceFromTrip(
-                                  0,
-                                ), // TODO: 실제 placeId 전달
-                              );
-                            }).toList(),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ] else ...[
-                  Container(
-                    height: MediaQuery.of(context).size.height * 0.3,
-                    decoration: const BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.only(
-                        topLeft: Radius.circular(20),
-                        topRight: Radius.circular(20),
-                      ),
-                    ),
-                    child: const Center(child: Text('여행 정보가 없습니다')),
-                  ),
-                ],
-              ],
-            ),
-          ),
 
-          // 상단 검색바
-          Positioned(
-            top: MediaQuery.of(context).padding.top + 10,
-            left: 16,
-            right: 16,
-            child: Container(
-              height: 50,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(25),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.1),
-                    blurRadius: 10,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: Row(
-                children: [
-                  IconButton(
-                    onPressed: () => Navigator.pop(context),
-                    icon: const Icon(Icons.arrow_back, color: Colors.black87),
-                  ),
-                  Expanded(
-                    child: GestureDetector(
-                      onTap: _navigateToSearch,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        alignment: Alignment.centerLeft,
-                        child: Row(
+                    // 탭이 있는 바텀시트
+                    if (widget.trips != null &&
+                        widget.trips!.isNotEmpty &&
+                        _tabController != null) ...[
+                      Container(
+                        height: MediaQuery.of(context).size.height * 0.4,
+                        decoration: const BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.only(
+                            topLeft: Radius.circular(20),
+                            topRight: Radius.circular(20),
+                          ),
+                        ),
+                        child: Column(
                           children: [
-                            const SizedBox(width: 8),
-                            Text(
-                              '장소를 검색하세요',
-                              style: TextStyle(
-                                color: Colors.grey[600],
-                                fontSize: 16,
+                            // 드래그 핸들
+                            Container(
+                              margin: const EdgeInsets.only(top: 8),
+                              width: 40,
+                              height: 4,
+                              decoration: BoxDecoration(
+                                color: Colors.grey[300],
+                                borderRadius: BorderRadius.circular(2),
+                              ),
+                            ),
+                            // 탭바
+                            SizedBox(
+                              height: 50,
+                              child: TabBar(
+                                controller: _tabController!,
+                                labelColor: Colors.blue,
+                                unselectedLabelColor: Colors.grey,
+                                indicatorColor: Colors.blue,
+                                tabs: widget.trips!.map((trip) {
+                                  return Tab(text: '${trip['tripOrder']}일차');
+                                }).toList(),
+                              ),
+                            ),
+                            // 탭뷰
+                            Expanded(
+                              child: TabBarView(
+                                controller: _tabController!,
+                                children: widget.trips!.map((trip) {
+                                  return TripDayContent(
+                                    trip: trip,
+                                    places: _places,
+                                    onRemovePlace: _removePlaceFromTrip,
+                                  );
+                                }).toList(),
                               ),
                             ),
                           ],
                         ),
                       ),
-                    ),
-                  ),
-                ],
+                    ] else ...[
+                      Container(
+                        height: MediaQuery.of(context).size.height * 0.3,
+                        decoration: const BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.only(
+                            topLeft: Radius.circular(20),
+                            topRight: Radius.circular(20),
+                          ),
+                        ),
+                        child: const Center(child: Text('여행 정보가 없습니다')),
+                      ),
+                    ],
+                  ],
+                ),
               ),
-            ),
+
+              // 상단 검색바
+              Positioned(
+                top: MediaQuery.of(context).padding.top + 10,
+                left: 16,
+                right: 16,
+
+                child: Container(
+                  height: 50,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(25),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.1),
+                        blurRadius: 10,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    children: [
+                      IconButton(
+                        onPressed: () => Navigator.pop(context),
+                        icon: const Icon(
+                          Icons.arrow_back,
+                          color: Colors.black87,
+                        ),
+                      ),
+                      Expanded(
+                        child: GestureDetector(
+                          onTap: _navigateToSearch,
+
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 16),
+                            alignment: Alignment.centerLeft,
+                            child: Row(
+                              children: [
+                                // const SizedBox(width: 100),
+                                Text(
+                                  selectedLocation != null
+                                      ? selectedLocation!.title
+                                      : '장소를 검색하세요',
+                                  style: TextStyle(
+                                    color: selectedLocation != null
+                                        ? Colors.black87
+                                        : Colors.grey[600],
+                                    fontSize: 16,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 }

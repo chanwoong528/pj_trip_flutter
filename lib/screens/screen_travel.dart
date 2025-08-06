@@ -133,7 +133,7 @@ class _ScreenTravelState extends State<ScreenTravel> {
           context,
           MaterialPageRoute(
             builder: (context) => ScreenMap(
-              isLocationKorea: _isLocationInKorea(_targetLocation),
+              isLocationKoreaProps: _isLocationInKorea(_targetLocation),
               travel: travel.isNotEmpty ? travel.first : null,
               trips: trips,
             ),

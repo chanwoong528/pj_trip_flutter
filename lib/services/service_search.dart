@@ -30,8 +30,6 @@ class ServiceSearch {
         final List<dynamic> items = data['documents'] ?? [];
         final result = items.map((item) => Location.kakaoFromJson(item));
 
-        debugPrint('result: ${items.toString()}');
-
         return result.toList();
       } else {
         debugPrint('API 요청 실패: ${response.statusCode}');
@@ -61,12 +59,9 @@ class ServiceSearch {
         url,
         headers: {'User-Agent': 'PJTripApp/1.0 (Flutter Travel App)'},
       );
-      debugPrint('response: ${response.body}');
-
       // Nominatim API는 배열을 직접 반환합니다
       final List<dynamic> items = json.decode(response.body);
       final result = items.map((item) => Location.nominatimFromJson(item));
-      debugPrint('result: ${result.toString()}');
       return result.toList();
     } catch (e) {
       debugPrint('검색 중 오류 발생: $e');

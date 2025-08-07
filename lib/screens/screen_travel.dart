@@ -131,13 +131,7 @@ class _ScreenTravelState extends State<ScreenTravel> {
       if (mounted) {
         Navigator.push(
           context,
-          MaterialPageRoute(
-            builder: (context) => ScreenMap(
-              isLocationKoreaProps: _isLocationInKorea(_targetLocation),
-              travel: travel.isNotEmpty ? travel.first : null,
-              trips: trips,
-            ),
-          ),
+          MaterialPageRoute(builder: (context) => ScreenMapHook()),
         );
         debugPrint('travel: $travel');
         debugPrint('trips: $trips');

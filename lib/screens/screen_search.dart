@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:pj_trip/domain/location.dart';
 import 'package:pj_trip/services/service_search.dart';
 import 'package:pj_trip/blocs/location/location_bloc.dart';
+import 'package:pj_trip/store/pods_searched_marker.dart';
 
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
@@ -199,8 +200,25 @@ class ScreenSearchHook extends HookConsumerWidget {
       }
     }
 
+    void onTapSearchedPlace(Location place) {
+      debugPrint('선택된 장소: ${place.title}');
+      ref
+          .read(markerProvider.notifier)
+          .setMarkerLocation(
+            place.y.toDouble(),
+            place.x.toDouble(),
+            'searched_marker',
+            place.title,
+          );
+      Navigator.pop(context, {
+        'isLocationKorea': true,
+        'targetLocation': place,
+      });
+    }
+
     useEffect(() {
       focusNode.requestFocus();
+      return null;
     }, []);
 
     return Scaffold(
@@ -271,17 +289,11 @@ class ScreenSearchHook extends HookConsumerWidget {
                       style: const TextStyle(fontWeight: FontWeight.bold),
                     ),
                     subtitle: Text(
-                      item.address ?? '주소 없음',
+                      item.address,
                       style: const TextStyle(color: Colors.grey),
                     ),
                     trailing: const Icon(Icons.add_location, size: 16),
-                    onTap: () {
-                      debugPrint('선택된 장소: ${item.title}');
-                      Navigator.pop(context, {
-                        'isLocationKorea': true,
-                        'targetLocation': item,
-                      });
-                    },
+                    onTap: () => onTapSearchedPlace(item),
                   ),
                 );
               },

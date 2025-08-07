@@ -2,19 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
-// import 'dart:math';
 
-import 'package:pj_trip/db/model/model_place.dart';
-import '../domain/location.dart';
+import 'package:pj_trip/domain/location.dart';
 
 class ServiceSearch {
-  // static Map<String, dynamic> convertWGS84ToLatLon(num mapy, num mapx) {
-  //   final lat = mapy / 180.0 * pi;
-  //   final lon = mapx / 180.0 * pi;
-
-  //   return {'lat': lat, 'lon': lon};
-  // }
-
   Future<List<Location>> searchPlaceKakao(String query) async {
     try {
       final url = Uri.parse(

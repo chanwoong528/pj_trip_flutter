@@ -102,14 +102,11 @@ class MyApp extends StatelessWidget {
         theme: ThemeData(primarySwatch: Colors.blue),
         initialRoute: '/',
         routes: {
-          // '/': (context) => const ScreenHome(),
-          // '/map': (context) => ScreenMap(isLocationKoreaProps: isLocationKorea),
-          // '/search': (context) => const ScreenSearch(tripId: 0),
           '/': (context) => const ScreenHomeHook(),
           '/map': (context) => const ScreenMapHook(),
           '/search': (context) => const ScreenSearchHook(),
-
-          '/travel': (context) => const ScreenTravel(),
+          '/travel': (context) =>
+              const ScreenTravel(), //TODO: have to refactor, last page
         },
         onGenerateRoute: (settings) {
           if (settings.name == '/search') {

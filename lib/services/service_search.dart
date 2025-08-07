@@ -4,6 +4,7 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 // import 'dart:math';
 
+import 'package:pj_trip/db/model/model_place.dart';
 import '../domain/location.dart';
 
 class ServiceSearch {
@@ -29,7 +30,6 @@ class ServiceSearch {
         final Map<String, dynamic> data = json.decode(response.body);
         final List<dynamic> items = data['documents'] ?? [];
         final result = items.map((item) => Location.kakaoFromJson(item));
-
         return result.toList();
       } else {
         debugPrint('API 요청 실패: ${response.statusCode}');

@@ -14,11 +14,21 @@ class BotSheetSingle extends StatelessWidget {
 
   Future<void> _addPlaceToTrip(int tripId, Location place) async {
     final database = await ServiceDB.getDatabase();
+    final places = await database.query(
+      'place',
+      where: 'tripId = ?',
+      whereArgs: [tripId],
+    );
+    final placeOrder = places.length + 1;
+
     await database.insert('place', {
       'tripId': tripId,
+      'placeOrder': placeOrder,
       'placeName': place.title,
       'placeLatitude': place.y,
       'placeLongitude': place.x,
+      'placeAddress': place.address,
+      'navigationUrl': 'place_url_${place.title}',
     });
   }
 

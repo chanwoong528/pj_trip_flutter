@@ -15,6 +15,8 @@ import 'db/service_db.dart';
 import 'blocs/camera/camera_bloc.dart';
 import 'blocs/location/location_bloc.dart';
 
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized(); // runApp 실행 이전이면 필요
   await dotenv.load(fileName: ".env");
@@ -53,7 +55,7 @@ void main() async {
     // Default to Google Maps when permission denied
   }
 
-  runApp(MyApp(isLocationKorea: isLocationKorea));
+  runApp(ProviderScope(child: MyApp(isLocationKorea: isLocationKorea)));
 }
 
 // iOS로 환경변수 전달하는 함수
@@ -100,10 +102,14 @@ class MyApp extends StatelessWidget {
         theme: ThemeData(primarySwatch: Colors.blue),
         initialRoute: '/',
         routes: {
-          '/': (context) => const ScreenHome(),
+          // '/': (context) => const ScreenHome(),
+          // '/map': (context) => ScreenMap(isLocationKoreaProps: isLocationKorea),
+          // '/search': (context) => const ScreenSearch(tripId: 0),
+          '/': (context) => const ScreenHomeHook(),
+          '/map': (context) => const ScreenMapHook(),
+          '/search': (context) => const ScreenSearchHook(),
+
           '/travel': (context) => const ScreenTravel(),
-          '/map': (context) => ScreenMap(isLocationKoreaProps: isLocationKorea),
-          '/search': (context) => const ScreenSearch(tripId: 0),
         },
         onGenerateRoute: (settings) {
           if (settings.name == '/search') {

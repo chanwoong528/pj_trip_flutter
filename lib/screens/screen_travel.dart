@@ -1,159 +1,156 @@
 import 'package:flutter/material.dart';
+import 'package:pj_trip/components/map/map_naver_hook.dart';
 import 'package:pj_trip/db/service_db.dart';
 import 'package:pj_trip/services/service_search.dart';
 import 'package:pj_trip/domain/location.dart';
 
 import 'package:pj_trip/components/map/map_google.dart';
-import 'package:pj_trip/components/map/map_naver.dart';
+
 import 'package:pj_trip/screens/screen_map.dart';
+import 'package:pj_trip/store/pods_camera.dart';
 import 'dart:async';
 
-class ScreenTravel extends StatefulWidget {
-  const ScreenTravel({super.key});
+import 'package:pj_trip/utils/camera_math.dart';
+import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:flutter_hooks/flutter_hooks.dart';
+
+import 'package:pj_trip/store/pods_searched_marker.dart';
+import 'package:pj_trip/store/current_travel/pods_current_travel.dart';
+import 'package:pj_trip/db/model/model_travel.dart';
+import 'package:pj_trip/db/model/model_trip.dart';
+
+class ScreenTravelHook extends HookConsumerWidget {
+  const ScreenTravelHook({super.key, this.travelName});
+
+  final String? travelName;
 
   @override
-  State<ScreenTravel> createState() => _ScreenTravelState();
-}
+  Widget build(BuildContext context, WidgetRef ref) {
+    final serviceSearch = ServiceSearch();
 
-class _ScreenTravelState extends State<ScreenTravel> {
-  Map<String, dynamic>? travel;
-  final TextEditingController _daysController = TextEditingController();
-  final TextEditingController _travelNameController = TextEditingController();
+    final travelNameController = useTextEditingController();
+    final daysController = useTextEditingController();
 
-  final ServiceSearch _serviceSearch = ServiceSearch();
-  Timer? _debounceTimer;
-  var _searchResults = <Location>[];
+    final searchResults = useState<List<Location>>([]);
 
-  var _targetLocation = Location(address: '', title: '', x: 0, y: 0);
-  var _isLoading = false;
-
-  bool _isLocationInKorea(Location location) {
-    // 주소에 한국 관련 키워드가 있는지 확인
-    final koreanKeywords = ['한국', '대한민국', 'Korea', 'South Korea', 'KR'];
-    final address = location.address.toLowerCase();
-    return koreanKeywords.any(
-      (keyword) => address.contains(keyword.toLowerCase()),
+    final targetLocation = useState<Location>(
+      Location(address: '', title: '', x: 126.9780, y: 37.5665),
     );
-  }
+    final isLoading = useState<bool>(false);
+    final debounceTimer = useRef<Timer?>(null);
 
-  @override
-  void initState() {
-    super.initState();
-    // 네비게이션 arguments에서 데이터 받기
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      final args = ModalRoute.of(context)?.settings.arguments;
-      if (args != null) {
-        setState(() {
-          travel = args as Map<String, dynamic>;
-          _travelNameController.text = travel!['englishName'];
-        });
-        debugPrint('Received travel name: $travel');
-      }
-    });
-  }
+    Future<void> searchPlace(String query) async {
+      // 이전 타이머가 있다면 취소
+      if (query.isEmpty) return;
 
-  @override
-  void dispose() {
-    _daysController.dispose();
-    _travelNameController.dispose();
-    _debounceTimer?.cancel();
-    super.dispose();
-  }
-
-  Future<void> _searchPlace(String query) async {
-    // 이전 타이머가 있다면 취소
-    _debounceTimer?.cancel();
-
-    // 1초 딜레이 후 검색 실행 (API 제한 방지)
-    _debounceTimer = Timer(const Duration(milliseconds: 1000), () async {
-      if (query.isNotEmpty) {
-        final results = await _serviceSearch.searchPlaceNominatim(query);
-        debugPrint('검색 결과 개수: ${results.length}');
-        setState(() {
-          _searchResults = results;
-        });
-      } else {
-        setState(() {
-          _searchResults = [];
-        });
-      }
-    });
-  }
-
-  Future<void> _addTravelToDB() async {
-    if (_travelNameController.text.isEmpty || _daysController.text.isEmpty) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('여행 이름과 일수를 입력해주세요')));
-      return;
+      debounceTimer.value?.cancel();
+      // 1초 딜레이 후 검색 실행 (API 제한 방지)
+      debounceTimer.value = Timer(const Duration(milliseconds: 1000), () async {
+        if (query.isNotEmpty) {
+          final results = await serviceSearch.searchPlaceNominatim(query);
+          debugPrint('검색 결과 개수: ${results.length}');
+          searchResults.value = results;
+        } else {
+          searchResults.value = [];
+        }
+      });
     }
 
-    setState(() {
-      _isLoading = true;
-    });
+    void onTapSearchedCity(Location place) {
+      targetLocation.value = place;
+      searchResults.value = [];
 
-    try {
-      final database = await ServiceDB.getDatabase();
+      debugPrint('선택된 장소: ${place.x} ${place.y} ${place.title}');
+      ref
+          .read(markerProvider.notifier)
+          .setMarkerLocation(
+            place.y.toDouble(),
+            place.x.toDouble(),
+            'searched_marker',
+            place.title,
+          );
 
-      // travel 테이블에 데이터 삽입
-      final travelId = await database.insert('travel', {
-        'travelName': _travelNameController.text,
-        'placeName': _targetLocation.title,
-        'placeLatitude': _targetLocation.y,
-        'placeLongitude': _targetLocation.x,
-      });
+      ref
+          .read(cameraProvider.notifier)
+          .setCameraLocation(place.y.toDouble(), place.x.toDouble());
+    }
 
-      // trip 테이블에 데이터 삽입
-      final batch = database.batch();
-      for (int i = 0; i < int.parse(_daysController.text); i++) {
-        batch.insert('trip', {
-          'travelId': travelId,
-          'tripName': '${_travelNameController.text} ${i + 1}일 여행',
-          'tripOrder': i + 1,
-        });
-      }
-      await batch.commit();
-
-      setState(() {
-        _isLoading = false;
-      });
-      final travel = await database.query(
-        'travel',
-        where: 'id = ?',
-        whereArgs: [travelId],
-      );
-      final trips = await database.query(
-        'trip',
-        where: 'travelId = ?',
-        whereArgs: [travelId],
-      );
-
-      if (mounted) {
-        Navigator.push(
+    Future<void> addTravelToDB() async {
+      if (travelNameController.text.isEmpty || daysController.text.isEmpty) {
+        ScaffoldMessenger.of(
           context,
-          MaterialPageRoute(builder: (context) => ScreenMapHook()),
+        ).showSnackBar(const SnackBar(content: Text('여행 이름과 일수를 입력해주세요')));
+        return;
+      }
+
+      isLoading.value = true;
+      try {
+        final database = await ServiceDB.getDatabase();
+
+        final travelId = await database.insert('travel', {
+          'travelName': travelNameController.text,
+          'placeName': targetLocation.value.title,
+          'placeLatitude': targetLocation.value.y,
+          'placeLongitude': targetLocation.value.x,
+        });
+
+        final batch = database.batch();
+        for (int i = 0; i < int.parse(daysController.text); i++) {
+          batch.insert('trip', {
+            'travelId': travelId,
+            'tripName': '${travelNameController.text} ${i + 1}일 여행',
+            'tripOrder': i + 1,
+          });
+        }
+        await batch.commit();
+
+        final trips = await database.query(
+          'trip',
+          where: 'travelId = ?',
+          whereArgs: [travelId],
         );
-        debugPrint('travel: $travel');
-        debugPrint('trips: $trips');
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('여행이 성공적으로 추가되었습니다!')));
-      }
-    } catch (e) {
-      setState(() {
-        _isLoading = false;
-      });
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('오류가 발생했습니다: $e')));
-      }
-      debugPrint('DB 오류: $e');
-    }
-  }
 
-  @override
-  Widget build(BuildContext context) {
+        final targetTravel = ModelTravel(
+          id: travelId,
+          travelName: travelNameController.text,
+          placeName: targetLocation.value.title,
+          placeLatitude: targetLocation.value.y,
+          placeLongitude: targetLocation.value.x,
+          trips: trips
+              .map(
+                (e) => ModelTrip(
+                  id: e['id'] as int,
+                  travelId: e['travelId'] as int,
+                  tripName: e['tripName'] as String,
+                  tripOrder: e['tripOrder'] as num,
+                ),
+              )
+              .toList(),
+        );
+        ref.read(currentTravelProvider.notifier).setCurrentTravel(targetTravel);
+
+        if (context.mounted) {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => ScreenMapHook()),
+          );
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(const SnackBar(content: Text('여행이 성공적으로 추가되었습니다!')));
+        }
+      } catch (e) {
+        debugPrint('DB 오류: $e');
+      } finally {
+        isLoading.value = false;
+      }
+    }
+
+    useEffect(() {
+      travelNameController.text = travelName ?? '';
+      searchPlace(travelNameController.text);
+      return null;
+    }, [travelName]);
+
     return Scaffold(
       appBar: AppBar(
         bottom: PreferredSize(
@@ -169,14 +166,14 @@ class _ScreenTravelState extends State<ScreenTravel> {
                 height: 40,
                 decoration: BoxDecoration(color: Colors.white),
                 child: TextField(
-                  controller: _travelNameController,
+                  controller: travelNameController,
                   textAlignVertical: TextAlignVertical.center,
                   style: const TextStyle(fontSize: 18, height: 1.5),
                   decoration: InputDecoration(
                     hintText: 'Where to go?',
                     border: InputBorder.none,
                   ),
-                  onChanged: (value) => _searchPlace(value),
+                  onChanged: (value) => searchPlace(value),
                 ),
               ),
             ),
@@ -185,7 +182,7 @@ class _ScreenTravelState extends State<ScreenTravel> {
               height: 40,
               width: 40,
               child: IconButton(
-                onPressed: _addTravelToDB,
+                onPressed: () {},
                 icon: const Icon(Icons.save),
                 padding: EdgeInsets.zero,
               ),
@@ -199,7 +196,7 @@ class _ScreenTravelState extends State<ScreenTravel> {
       body: Column(
         children: [
           // 검색 결과 드롭다운
-          if (_searchResults.isNotEmpty) ...[
+          if (searchResults.value.isNotEmpty) ...[
             Container(
               width: double.infinity,
               constraints: const BoxConstraints(maxHeight: 200),
@@ -219,9 +216,9 @@ class _ScreenTravelState extends State<ScreenTravel> {
               child: ListView.builder(
                 padding: EdgeInsets.zero,
                 shrinkWrap: true,
-                itemCount: _searchResults.length,
+                itemCount: searchResults.value.length,
                 itemBuilder: (context, index) {
-                  final item = _searchResults[index];
+                  final item = searchResults.value[index];
                   return ListTile(
                     dense: true,
                     contentPadding: const EdgeInsets.symmetric(
@@ -242,31 +239,25 @@ class _ScreenTravelState extends State<ScreenTravel> {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
-                    onTap: () {
-                      _targetLocation = item;
-                      setState(() {
-                        _searchResults = [];
-                      });
-                      debugPrint('선택된 장소: ${item.title}');
-                    },
+                    onTap: () => onTapSearchedCity(item),
                   );
                 },
               ),
             ),
           ],
           // 선택된 위치가 있으면 지도와 여행 정보 표시
-          if (_targetLocation.title.isNotEmpty) ...[
+          if (targetLocation.value.title.isNotEmpty) ...[
             Expanded(
               child: SizedBox(
                 width: double.infinity,
                 height: double.infinity,
-                child: _isLocationInKorea(_targetLocation)
-                    ? MapNaver(location: _targetLocation)
+                child: isLocationInKorea(targetLocation.value)
+                    ? MapNaverHook()
                     : MapGoogle(),
               ),
             ),
             // 바텀시트로 여행 정보 표시
-            if (_targetLocation.title.isNotEmpty)
+            if (targetLocation.value.title.isNotEmpty)
               Container(
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
@@ -301,7 +292,7 @@ class _ScreenTravelState extends State<ScreenTravel> {
                     const SizedBox(height: 20),
                     // 위치 정보
                     Text(
-                      _targetLocation.title,
+                      targetLocation.value.title,
                       style: const TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
@@ -309,13 +300,13 @@ class _ScreenTravelState extends State<ScreenTravel> {
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      _targetLocation.address,
+                      targetLocation.value.address,
                       style: TextStyle(fontSize: 14, color: Colors.grey[600]),
                     ),
                     const SizedBox(height: 24),
                     // 여행 일수 입력
                     TextField(
-                      controller: _daysController,
+                      controller: daysController,
                       keyboardType: TextInputType.number,
                       decoration: const InputDecoration(
                         labelText: '여행 일수',
@@ -330,7 +321,7 @@ class _ScreenTravelState extends State<ScreenTravel> {
                       width: double.infinity,
                       height: 50,
                       child: ElevatedButton(
-                        onPressed: _isLoading ? null : _addTravelToDB,
+                        onPressed: isLoading.value ? null : addTravelToDB,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.blue,
                           foregroundColor: Colors.white,
@@ -338,7 +329,7 @@ class _ScreenTravelState extends State<ScreenTravel> {
                             borderRadius: BorderRadius.circular(12),
                           ),
                         ),
-                        child: _isLoading
+                        child: isLoading.value
                             ? const CircularProgressIndicator(
                                 color: Colors.white,
                               )
@@ -376,5 +367,6 @@ class _ScreenTravelState extends State<ScreenTravel> {
         ],
       ),
     );
+    ;
   }
 }

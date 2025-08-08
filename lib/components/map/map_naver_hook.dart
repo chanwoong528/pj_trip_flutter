@@ -97,7 +97,7 @@ class MapNaverHook extends HookConsumerWidget {
         camera.lat,
         camera.lng,
         camera.zoom,
-        currentPlaces.length,
+        currentPlaces.map((e) => e.placeOrder).toList(),
         mapControllerRef.value,
       ],
     );
@@ -126,6 +126,10 @@ class MapNaverHook extends HookConsumerWidget {
           tiltGesturesEnable: false,
           rotationGesturesEnable: false,
           scrollGesturesFriction: 0.1,
+          initialCameraPosition: NCameraPosition(
+            target: NLatLng(camera.lat, camera.lng),
+            zoom: camera.zoom,
+          ),
         ),
         onMapReady: (controller) {
           mapControllerRef.value = controller;

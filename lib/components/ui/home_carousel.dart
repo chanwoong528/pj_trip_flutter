@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:pj_trip/constant/constant.dart';
+import 'package:pj_trip/screens/screen_travel.dart';
 
 class HomeCarousel extends StatelessWidget {
   HomeCarousel({super.key});
@@ -26,7 +27,13 @@ class HomeCarousel extends StatelessWidget {
                       borderRadius: BorderRadius.circular(10.0),
                       child: GestureDetector(
                         onTap: () {
-                          Navigator.pushNamed(context, '/travel', arguments: e);
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) =>
+                                  ScreenTravelHook(travelName: e['name']),
+                            ),
+                          );
                         },
                         child: Image.asset(
                           e['image'],

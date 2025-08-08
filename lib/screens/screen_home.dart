@@ -89,18 +89,6 @@ class ScreenHomeHook extends HookConsumerWidget {
     Future<void> navigateToMap(ModelTravel travel) async {
       ref.read(currentTravelProvider.notifier).setCurrentTravel(travel);
       Navigator.pushNamed(context, '/map');
-      // Navigator.push(
-      //   context,
-      //   MaterialPageRoute(
-      //     builder: (context) => ScreenMap(
-      //       travel: travel,
-      //       trips: trips,
-      //       isLocationKoreaProps: true,
-      //     ),
-      //   ),
-      // );
-      //TODO: 카메라 이동 코드 추가
-      //TODO: map 화면으로 이동
     }
 
     useEffect(() {
@@ -108,22 +96,20 @@ class ScreenHomeHook extends HookConsumerWidget {
         travelsState.value = travels;
       });
       return null;
-    }, []);
+    }, [currentTravel.id]);
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(
-          currentTravel.travelName == ''
-              ? 'Home'
-              : "${currentTravel.travelName} - ${currentTravel.trips.length}일",
-        ),
+      appBar: AppBar(title: Text('Home')),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          Navigator.pushNamed(context, '/travel');
+        },
+        child: Icon(Icons.add),
       ),
       body: Column(
         children: [
-          const SizedBox(height: 20),
           HomeCarousel(),
-          const SizedBox(height: 20),
-          Text('Travels: ${travelsState.value.length}'),
+
           Expanded(
             child: ListView.builder(
               itemCount: travelsState.value.length,

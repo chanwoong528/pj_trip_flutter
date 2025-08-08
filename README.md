@@ -23,3 +23,16 @@ riverpod config
 dart run build_runner watch -d
 
 keytool -exportcert -alias androiddebugkey -keystore ~/.android/debug.keystore | openssl sha1 -binary | openssl base64
+
+
+
+##TODO 
+- map onTap giving location info -> and save
+- internalization
+- share
+- google map development
+
+
+
+
+

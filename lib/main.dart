@@ -3,7 +3,6 @@ import 'package:flutter_naver_map/flutter_naver_map.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter/services.dart';
 import 'package:geolocator/geolocator.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'screens/screen_home.dart';
 import 'screens/screen_map.dart';
@@ -12,8 +11,6 @@ import 'screens/screen_travel.dart';
 
 import 'services/service_location.dart';
 import 'db/service_db.dart';
-import 'blocs/camera/camera_bloc.dart';
-import 'blocs/location/location_bloc.dart';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -43,19 +40,16 @@ void main() async {
   );
 
   ServiceLocation serviceLocation = ServiceLocation();
-  bool isLocationKorea = false; // default to Google Maps
 
   try {
     Position position = await serviceLocation.getCurrentPosition();
     debugPrint("position: ${position.latitude}, ${position.longitude}");
-    isLocationKorea = isSouthKorea(position.latitude, position.longitude);
-    debugPrint("isLocationKorea: $isLocationKorea");
   } catch (e) {
     debugPrint("Location permission denied or error: $e");
     // Default to Google Maps when permission denied
   }
 
-  runApp(ProviderScope(child: MyApp(isLocationKorea: isLocationKorea)));
+  runApp(ProviderScope(child: MyApp()));
 }
 
 // iOS로 환경변수 전달하는 함수
@@ -81,48 +75,34 @@ bool isSouthKorea(double latitude, double longitude) {
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key, required this.isLocationKorea});
+  const MyApp({super.key});
 
-  final bool isLocationKorea;
-
-  // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
-    return MultiBlocProvider(
-      providers: [
-        BlocProvider<CameraBloc>(create: (context) => CameraBloc()),
-        BlocProvider<LocationBloc>(create: (context) => LocationBloc()),
-        // 여기에 다른 BLoC들도 추가할 수 있습니다
-        // BlocProvider<OtherBloc>(
-        //   create: (context) => OtherBloc(),
-        // ),
-      ],
-      child: MaterialApp(
-        title: 'Flutter Demo',
-        theme: ThemeData(primarySwatch: Colors.blue),
-        initialRoute: '/',
-        routes: {
-          '/': (context) => const ScreenHomeHook(),
-          '/map': (context) => const ScreenMapHook(),
-          '/search': (context) => const ScreenSearchHook(),
-          '/travel': (context) =>
-              const ScreenTravel(), //TODO: have to refactor, last page
-        },
-        onGenerateRoute: (settings) {
-          if (settings.name == '/search') {
-            return PageRouteBuilder(
-              pageBuilder: (context, animation, secondaryAnimation) =>
-                  ScreenSearch(tripId: settings.arguments as int),
-              transitionsBuilder:
-                  (context, animation, secondaryAnimation, child) {
-                    return child;
-                  },
-              transitionDuration: Duration.zero,
-            );
-          }
-          return null;
-        },
-      ),
+    return MaterialApp(
+      title: 'Flutter Demo',
+      theme: ThemeData(primarySwatch: Colors.blue),
+      initialRoute: '/',
+      routes: {
+        '/': (context) => const ScreenHomeHook(),
+        '/map': (context) => const ScreenMapHook(),
+        '/search': (context) => const ScreenSearchHook(),
+        '/travel': (context) => const ScreenTravelHook(),
+      },
+      onGenerateRoute: (settings) {
+        if (settings.name == '/search') {
+          return PageRouteBuilder(
+            pageBuilder: (context, animation, secondaryAnimation) =>
+                ScreenSearchHook(tripId: settings.arguments as int),
+            transitionsBuilder:
+                (context, animation, secondaryAnimation, child) {
+                  return child;
+                },
+            transitionDuration: Duration.zero,
+          );
+        }
+        return null;
+      },
     );
   }
 }

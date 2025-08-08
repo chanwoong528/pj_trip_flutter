@@ -49,4 +49,26 @@ class ModelPlace {
       placeOrder: placeOrder,
     );
   }
+
+  ModelPlace copyWith({
+    int? id,
+    int? tripId,
+    num? placeOrder,
+    String? placeName,
+    num? placeLatitude,
+    num? placeLongitude,
+    String? placeAddress,
+    String? navigationUrl,
+  }) {
+    return ModelPlace(
+      id: id ?? this.id,
+      tripId: tripId ?? this.tripId,
+      placeOrder: placeOrder ?? this.placeOrder,
+      placeName: placeName ?? this.placeName,
+      placeLatitude: placeLatitude ?? this.placeLatitude,
+      placeLongitude: placeLongitude ?? this.placeLongitude,
+      placeAddress: placeAddress ?? this.placeAddress,
+      navigationUrl: navigationUrl ?? this.navigationUrl,
+    );
+  }
 }

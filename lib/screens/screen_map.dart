@@ -86,6 +86,7 @@ class ScreenMapHook extends HookConsumerWidget {
       ServicePlace.getPlaces(
         currentTravel.trips[currentTabIndex.value].id,
       ).then((places) {
+        debugPrint('places: ${places.map((e) => e.placeName).toList()}');
         ref.read(currentPlacesProvider.notifier).setCurrentPlaces(places);
         if (places.isNotEmpty) {
           final avgCenterLocation = getAvgCenterLocationByPlacesModel(places);
@@ -162,10 +163,7 @@ class ScreenMapHook extends HookConsumerWidget {
                             controller: tabController,
 
                             children: currentTravel.trips.map((trip) {
-                              return ListPlaces(
-                                listPlaces: currentPlaces,
-                                onRemovePlace: onRemovePlace,
-                              );
+                              return ListPlaces(onRemovePlace: onRemovePlace);
                             }).toList(),
                           ),
                         ),
@@ -211,7 +209,8 @@ class ScreenMapHook extends HookConsumerWidget {
               child: Row(
                 children: [
                   IconButton(
-                    onPressed: () => Navigator.pop(context),
+                    onPressed: () =>
+                        Navigator.popUntil(context, ModalRoute.withName('/')),
                     icon: const Icon(Icons.arrow_back, color: Colors.black87),
                   ),
                   Expanded(

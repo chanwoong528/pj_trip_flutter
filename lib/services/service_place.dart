@@ -9,6 +9,7 @@ class ServicePlace {
       'place',
       where: 'tripId = ?',
       whereArgs: [tripId],
+      orderBy: 'placeOrder ASC',
     );
     debugPrint('places: $places');
     return places
@@ -30,5 +31,23 @@ class ServicePlace {
   static Future<void> removePlace(int placeId) async {
     final database = await ServiceDB.getDatabase();
     await database.delete('place', where: 'id = ?', whereArgs: [placeId]);
+  }
+
+  static Future<void> updatePlaceOrder(List<ModelPlace> places) async {
+    final database = await ServiceDB.getDatabase();
+    debugPrint(
+      'updatePlaceOrder service: ${places.map((e) => e.placeName).toList()}',
+    );
+    debugPrint(
+      'updatePlaceOrder service: ${places.map((e) => e.placeOrder).toList()}',
+    );
+    for (int i = 0; i < places.length; i++) {
+      await database.update(
+        'place',
+        {'placeOrder': i},
+        where: 'id = ?',
+        whereArgs: [places[i].id],
+      );
+    }
   }
 }

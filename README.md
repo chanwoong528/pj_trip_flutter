@@ -32,6 +32,7 @@ keytool -exportcert -alias androiddebugkey -keystore ~/.android/debug.keystore |
 - share
 - google map development
 
+- ui development (dark mode / light mode)
 - optional (landing page better ui)
 
 

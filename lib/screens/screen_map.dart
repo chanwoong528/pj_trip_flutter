@@ -5,7 +5,7 @@ import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:pj_trip/components/map/map_google.dart';
 
 import 'package:pj_trip/screens/screen_search.dart';
-import 'package:pj_trip/components/ui/bot_sheet_single.dart';
+import 'package:pj_trip/components/ui/bot_sheet_save_place.dart';
 
 import 'package:pj_trip/utils/camera_math.dart';
 
@@ -28,11 +28,14 @@ class ScreenMapHook extends HookConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final currentTravel = ref.watch(currentTravelProvider);
+
     final tabController = useTabController(
       initialLength: currentTravel.trips.length,
     );
     final currentTabIndex = useState(0);
-    final currentPlaces = ref.watch(currentPlacesProvider);
+    final isExpanded = useState(false);
+
+    final deletePlaceId = useState<int?>(null);
 
     void navigateToSearchedPlace(int tripId) async {
       final result = await Navigator.push(
@@ -66,7 +69,7 @@ class ScreenMapHook extends HookConsumerWidget {
               context: context,
               isScrollControlled: true,
               backgroundColor: Colors.transparent,
-              builder: (context) => BotSheetSingleHook(
+              builder: (context) => BotSheetSavePlace(
                 location: targetLocation,
                 tripId: currentTravel.trips[currentTabIndex.value].id,
               ),
@@ -77,6 +80,8 @@ class ScreenMapHook extends HookConsumerWidget {
     }
 
     void onRemovePlace(int placeId) {
+      debugPrint('onRemovePlace: $placeId');
+      deletePlaceId.value = placeId;
       ServicePlace.removePlace(placeId).then((_) {
         ref.read(currentPlacesProvider.notifier).removeCurrentPlace(placeId);
       });
@@ -86,7 +91,7 @@ class ScreenMapHook extends HookConsumerWidget {
       ServicePlace.getPlaces(
         currentTravel.trips[currentTabIndex.value].id,
       ).then((places) {
-        debugPrint('places: ${places.map((e) => e.placeName).toList()}');
+        // debugPrint('places: ${places.map((e) => e.placeName).toList()}');
         ref.read(currentPlacesProvider.notifier).setCurrentPlaces(places);
         if (places.isNotEmpty) {
           final avgCenterLocation = getAvgCenterLocationByPlacesModel(places);
@@ -117,13 +122,16 @@ class ScreenMapHook extends HookConsumerWidget {
               children: [
                 Expanded(
                   child: currentTravel.isLocationKorea()
-                      ? MapNaverHook()
+                      ? MapNaverHook(deletePlaceId: deletePlaceId.value)
                       : MapGoogle(),
                 ),
 
                 if (currentTravel.trips.isNotEmpty) ...[
-                  Container(
-                    height: MediaQuery.of(context).size.height * 0.4,
+                  AnimatedContainer(
+                    duration: const Duration(milliseconds: 150),
+                    height:
+                        MediaQuery.of(context).size.height *
+                        (isExpanded.value ? 0.4 : 0.20),
                     decoration: const BoxDecoration(
                       color: Colors.white,
                       borderRadius: BorderRadius.only(
@@ -134,13 +142,43 @@ class ScreenMapHook extends HookConsumerWidget {
                     child: Column(
                       children: [
                         // 드래그 핸들
-                        Container(
-                          margin: const EdgeInsets.only(top: 8),
-                          width: 40,
-                          height: 4,
-                          decoration: BoxDecoration(
-                            color: Colors.grey[300],
-                            borderRadius: BorderRadius.circular(2),
+                        GestureDetector(
+                          onTap: () {
+                            isExpanded.value = !isExpanded.value;
+                          },
+                          onVerticalDragStart: (details) {
+                            // isExpanded.value = !isExpanded.value;
+                          },
+                          onVerticalDragUpdate: (details) {
+                            // isExpanded.value = !isExpanded.value;
+                          },
+                          onVerticalDragEnd: (details) {
+                            isExpanded.value = !isExpanded.value;
+                          },
+
+                          child: Container(
+                            width: double.infinity,
+                            height: 40,
+                            decoration: BoxDecoration(
+                              // color: Colors.red,
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: TextButton(
+                              onPressed: () {
+                                isExpanded.value = !isExpanded.value;
+                              },
+                              child: isExpanded.value
+                                  ? const Icon(
+                                      Icons.expand_more,
+                                      size: 30,
+                                      color: Colors.grey,
+                                    )
+                                  : const Icon(
+                                      Icons.expand_less,
+                                      size: 30,
+                                      color: Colors.grey,
+                                    ),
+                            ),
                           ),
                         ),
                         // 탭바
@@ -161,7 +199,6 @@ class ScreenMapHook extends HookConsumerWidget {
                         Expanded(
                           child: TabBarView(
                             controller: tabController,
-
                             children: currentTravel.trips.map((trip) {
                               return ListPlaces(onRemovePlace: onRemovePlace);
                             }).toList(),

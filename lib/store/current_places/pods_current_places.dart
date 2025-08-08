@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:pj_trip/db/model/model_place.dart';
 
@@ -17,10 +18,13 @@ class CurrentPlaces extends _$CurrentPlaces {
   }
 
   void addCurrentPlaceByIndex(int index, ModelPlace place) {
+    if (index < 0 || index > state.length) return;
+
     state = [...state.sublist(0, index), place, ...state.sublist(index)];
   }
 
   void removeCurrentPlace(int placeId) {
+    debugPrint('removeCurrentPlace: $placeId');
     state = state.where((place) => place.id != placeId).toList();
   }
 

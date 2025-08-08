@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
-import 'package:pj_trip/db/model/model_place.dart';
+
 import 'package:pj_trip/services/service_place.dart';
 import 'package:pj_trip/store/current_places/pods_current_places.dart';
 
@@ -17,8 +17,8 @@ class ListPlaces extends HookConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final ColorScheme colorScheme = Theme.of(context).colorScheme;
-    final Color oddItemColor = colorScheme.primary.withOpacity(0.05);
-    final Color evenItemColor = colorScheme.primary.withOpacity(0.15);
+    final Color oddItemColor = colorScheme.primary.withValues(alpha: 0.05);
+    final Color evenItemColor = colorScheme.primary.withValues(alpha: 0.15);
     final currentPlaces = ref.watch(currentPlacesProvider);
 
     if (currentPlaces.isEmpty) {
@@ -32,14 +32,7 @@ class ListPlaces extends HookConsumerWidget {
           .map((entry) => entry.value.copyWith(placeOrder: entry.key))
           .toList();
 
-      ServicePlace.updatePlaceOrder(tempList).then((_) {
-        debugPrint(
-          'tempList: ${currentPlaces.map((e) => e.placeName).toList()}',
-        );
-        debugPrint(
-          'tempList: ${currentPlaces.map((e) => e.placeOrder).toList()}',
-        );
-      });
+      ServicePlace.updatePlaceOrder(tempList).then((_) {});
       return null;
     }, [currentPlaces]);
     void onReorder(int oldIndex, int newIndex) {
@@ -61,21 +54,31 @@ class ListPlaces extends HookConsumerWidget {
             key: Key('$index'),
             color: index.isOdd ? oddItemColor : evenItemColor,
             child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: <Widget>[
-                Container(
-                  width: 64,
-                  height: 64,
-                  padding: const EdgeInsets.all(8),
-                  child: ReorderableDragStartListener(
-                    index: index,
-                    child: Card(
-                      color: colorScheme.primary,
-                      elevation: 2,
-                      child: const Icon(Icons.drag_handle),
+                Row(
+                  children: [
+                    Container(
+                      width: 64,
+                      height: 64,
+                      padding: const EdgeInsets.all(8),
+
+                      child: ReorderableDragStartListener(
+                        index: index,
+                        child: Card(
+                          color: colorScheme.primary,
+                          elevation: 2,
+                          child: Icon(Icons.drag_handle),
+                        ),
+                      ),
                     ),
-                  ),
+                    Text('Item ${currentPlaces[index].placeName}'),
+                  ],
                 ),
-                Text('Item ${currentPlaces[index].placeName}'),
+                IconButton(
+                  onPressed: () => onRemovePlace(currentPlaces[index].id),
+                  icon: const Icon(Icons.delete, color: Colors.red),
+                ),
               ],
             ),
           ),

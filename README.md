@@ -28,14 +28,17 @@ keytool -exportcert -alias androiddebugkey -keystore ~/.android/debug.keystore |
 
 ##TODO 
 - map onTap giving location info -> and save
+    - on tap -> api -> bottomsheet list of 5 -> choose -> save 
+    
 - internalization
 - share
-- google map development
 
+
+- google map development
 - ui development (dark mode / light mode)
 - optional (landing page better ui)
 
 
 
 
-
+https://pub.dev/packages/flutter_osm_plugin

@@ -7,9 +7,12 @@ import 'package:flutter_naver_map/flutter_naver_map.dart';
 import 'package:pj_trip/store/pods_searched_marker.dart';
 import 'package:pj_trip/store/current_places/pods_current_places.dart';
 import 'package:pj_trip/db/model/model_place.dart';
+import 'package:pj_trip/services/service_search.dart';
+import 'package:pj_trip/components/ui/bot_sheet_searched_places.dart';
 
 class MapNaverHook extends HookConsumerWidget {
-  const MapNaverHook({super.key});
+  const MapNaverHook({super.key, this.deletePlaceId});
+  final int? deletePlaceId;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -55,24 +58,54 @@ class MapNaverHook extends HookConsumerWidget {
     }
 
     void markPlaces(List<ModelPlace> places) {
-      if (mapControllerRef.value == null || places.isEmpty) return;
+      try {
+        if (mapControllerRef.value == null || places.isEmpty) return;
 
-      // mapControllerRef.value?.clearOverlays(); //TODO: consider if it's needed
-      final markers = <NMarker>{};
-      for (final place in places) {
-        markers.add(
-          NMarker(
-            id: place.id.toString(),
-            iconTintColor: Colors.blue,
-            position: NLatLng(
-              place.placeLatitude.toDouble(),
-              place.placeLongitude.toDouble(),
+        final markers = <NMarker>{};
+        for (final place in places) {
+          markers.add(
+            NMarker(
+              id: 'trip_place_${place.id}',
+              iconTintColor: Colors.blue,
+              position: NLatLng(
+                place.placeLatitude.toDouble(),
+                place.placeLongitude.toDouble(),
+              ),
             ),
-          ),
+          );
+        }
+        final path = makePath(places);
+        mapControllerRef.value?.addOverlayAll({...markers, path});
+      } catch (e) {
+        debugPrint('Failed to mark places: $e');
+      }
+    }
+
+    void deletePlaceMarker(int? placeId) {
+      try {
+        if (mapControllerRef.value == null || placeId == null) return;
+
+        mapControllerRef.value?.deleteOverlay(
+          NOverlayInfo(id: 'trip_place_${placeId}', type: NOverlayType.marker),
+        );
+      } catch (e) {
+        debugPrint('Failed to delete marker for place $placeId: $e');
+      }
+    }
+
+    void onSymbolTapped(NSymbolInfo symbol) async {
+      final searchedPlaces = await ServiceSearch().searchPlaceNaver(
+        symbol.caption,
+      );
+
+      if (context.mounted) {
+        await showModalBottomSheet(
+          context: context,
+          isScrollControlled: true,
+          backgroundColor: Colors.transparent,
+          builder: (context) => BotSheetSearchedPlaces(places: searchedPlaces),
         );
       }
-      final path = makePath(places);
-      mapControllerRef.value?.addOverlayAll({...markers, path});
     }
 
     useEffect(
@@ -91,6 +124,7 @@ class MapNaverHook extends HookConsumerWidget {
         if (currentPlaces.isNotEmpty) {
           markPlaces(currentPlaces);
         }
+
         return null;
       },
       [
@@ -117,6 +151,15 @@ class MapNaverHook extends HookConsumerWidget {
       }
       return null;
     }, [curMarker.lat, curMarker.lng, curMarker.title]);
+
+    useEffect(() {
+      debugPrint('deletePlaceId: $deletePlaceId');
+      if (mapControllerRef.value != null) {
+        deletePlaceMarker(deletePlaceId);
+      }
+      return null;
+    }, [deletePlaceId, mapControllerRef.value]);
+
     final safeAreaPadding = MediaQuery.paddingOf(context);
 
     return Scaffold(
@@ -135,6 +178,8 @@ class MapNaverHook extends HookConsumerWidget {
           mapControllerRef.value = controller;
           debugPrint('Map controller ready');
         },
+
+        onSymbolTapped: (symbol) => onSymbolTapped(symbol),
       ),
     );
   }

@@ -5,8 +5,8 @@ import 'package:pj_trip/domain/location.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:pj_trip/store/current_places/pods_current_places.dart';
 
-class BotSheetSingleHook extends HookConsumerWidget {
-  const BotSheetSingleHook({
+class BotSheetSavePlace extends HookConsumerWidget {
+  const BotSheetSavePlace({
     super.key,
     required this.location,
     required this.tripId,
@@ -26,7 +26,7 @@ class BotSheetSingleHook extends HookConsumerWidget {
       );
       final placeOrder = places.length + 1;
 
-      await database.insert('place', {
+      final id = await database.insert('place', {
         'tripId': tripId,
         'placeOrder': placeOrder,
         'placeName': place.title,
@@ -40,7 +40,7 @@ class BotSheetSingleHook extends HookConsumerWidget {
           .read(currentPlacesProvider.notifier)
           .addCurrentPlace(
             ModelPlace(
-              id: 0,
+              id: id,
               tripId: tripId,
               placeOrder: placeOrder,
               placeName: place.title,

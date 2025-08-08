@@ -88,7 +88,9 @@ class _MapGoogleState extends State<MapGoogle> {
         polylines: _polylines,
         initialCameraPosition: _kGooglePlex,
         onCameraMove: ((position) => _updatePosition(position)),
-
+        onTap: (LatLng latLng) {
+          debugPrint('onTap@map_google : $latLng');
+        },
         onMapCreated: (GoogleMapController controller) {
           _controller.complete(controller);
         },

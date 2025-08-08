@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+// import 'package:flutter/material.dart';
 import 'package:pj_trip/db/service_db.dart';
 import 'package:pj_trip/db/model/model_place.dart';
 
@@ -11,7 +11,7 @@ class ServicePlace {
       whereArgs: [tripId],
       orderBy: 'placeOrder ASC',
     );
-    debugPrint('places: $places');
+    // debugPrint('places: $places');
     return places
         .map(
           (e) => ModelPlace(
@@ -34,13 +34,14 @@ class ServicePlace {
   }
 
   static Future<void> updatePlaceOrder(List<ModelPlace> places) async {
+    if (places.isEmpty) return;
     final database = await ServiceDB.getDatabase();
-    debugPrint(
-      'updatePlaceOrder service: ${places.map((e) => e.placeName).toList()}',
-    );
-    debugPrint(
-      'updatePlaceOrder service: ${places.map((e) => e.placeOrder).toList()}',
-    );
+    // debugPrint(
+    //   'updatePlaceOrder service: ${places.map((e) => e.placeName).toList()}',
+    // );
+    // debugPrint(
+    //   'updatePlaceOrder service: ${places.map((e) => e.placeOrder).toList()}',
+    // );
     for (int i = 0; i < places.length; i++) {
       await database.update(
         'place',

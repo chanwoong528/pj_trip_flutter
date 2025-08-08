@@ -32,6 +32,8 @@ keytool -exportcert -alias androiddebugkey -keystore ~/.android/debug.keystore |
 - share
 - google map development
 
+- optional (landing page better ui)
+
 
 
 

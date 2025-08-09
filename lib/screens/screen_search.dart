@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:pj_trip/domain/location.dart';
 import 'package:pj_trip/services/service_search.dart';
 import 'package:pj_trip/store/pods_searched_marker.dart';
+import 'package:pj_trip/store/current_travel/pods_current_travel.dart';
 
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
@@ -13,8 +14,7 @@ class ScreenSearchHook extends HookConsumerWidget {
   final int tripId;
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    debugPrint('tripId: $tripId');
-
+    final currentTravel = ref.watch(currentTravelProvider);
     final ServiceSearch serviceSearch = ServiceSearch();
     final searchController = useTextEditingController();
 
@@ -26,10 +26,19 @@ class ScreenSearchHook extends HookConsumerWidget {
       if (searchController.text.isEmpty) return;
       isLoading.value = true;
       try {
-        final results = await serviceSearch.searchPlaceKakao(
-          searchController.text,
-        );
-        searchResults.value = results;
+        if (currentTravel.isLocationKorea()) {
+          final results = await serviceSearch.searchPlaceKakao(
+            searchController.text,
+          );
+          searchResults.value = results;
+        } else {
+          final results = await serviceSearch.searchPlaceGoogle(
+            searchController.text,
+            currentTravel.bounds,
+          );
+          searchResults.value = results;
+        }
+
         isLoading.value = false;
       } catch (e) {
         isLoading.value = false;

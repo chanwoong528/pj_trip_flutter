@@ -62,6 +62,10 @@ class ScreenTravelHook extends HookConsumerWidget {
 
       debugPrint('선택된 장소: ${place.x} ${place.y} ${place.title}');
       ref
+          .read(cameraProvider.notifier)
+          .setCameraLocation(place.y.toDouble(), place.x.toDouble());
+
+      ref
           .read(markerProvider.notifier)
           .setMarkerLocation(
             place.y.toDouble(),
@@ -69,10 +73,6 @@ class ScreenTravelHook extends HookConsumerWidget {
             'searched_marker',
             place.title,
           );
-
-      ref
-          .read(cameraProvider.notifier)
-          .setCameraLocation(place.y.toDouble(), place.x.toDouble());
     }
 
     Future<void> addTravelToDB() async {
@@ -252,8 +252,20 @@ class ScreenTravelHook extends HookConsumerWidget {
                 width: double.infinity,
                 height: double.infinity,
                 child: isLocationInKorea(targetLocation.value)
-                    ? MapNaverHook()
-                    : MapGoogle(),
+                    ? MapNaverHook(
+                        initialCamera: CameraModel(
+                          lat: targetLocation.value.x.toDouble(),
+                          lng: targetLocation.value.y.toDouble(),
+                          zoom: 12,
+                        ),
+                      )
+                    : MapGoogleHook(
+                        initialCamera: CameraModel(
+                          lat: targetLocation.value.x.toDouble(),
+                          lng: targetLocation.value.y.toDouble(),
+                          zoom: 12,
+                        ),
+                      ),
               ),
             ),
             // 바텀시트로 여행 정보 표시
@@ -367,6 +379,5 @@ class ScreenTravelHook extends HookConsumerWidget {
         ],
       ),
     );
-    ;
   }
 }

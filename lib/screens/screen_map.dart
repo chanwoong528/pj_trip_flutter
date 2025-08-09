@@ -29,6 +29,9 @@ class ScreenMapHook extends HookConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final currentTravel = ref.watch(currentTravelProvider);
 
+    debugPrint(
+      "current Travel  ${currentTravel.travelName} ${currentTravel.isLocationKorea()}",
+    );
     final tabController = useTabController(
       initialLength: currentTravel.trips.length,
     );
@@ -123,7 +126,7 @@ class ScreenMapHook extends HookConsumerWidget {
                 Expanded(
                   child: currentTravel.isLocationKorea()
                       ? MapNaverHook(deletePlaceId: deletePlaceId.value)
-                      : MapGoogle(),
+                      : MapGoogleHook(deletePlaceId: deletePlaceId.value),
                 ),
 
                 if (currentTravel.trips.isNotEmpty) ...[

@@ -1,3 +1,17 @@
+class Bounds {
+  final double lowLatitude;
+  final double lowLongitude;
+  final double highLatitude;
+  final double highLongitude;
+
+  Bounds({
+    required this.lowLatitude,
+    required this.lowLongitude,
+    required this.highLatitude,
+    required this.highLongitude,
+  });
+}
+
 class ModelPlace {
   final int id;
   final int tripId;
@@ -8,7 +22,7 @@ class ModelPlace {
   final String placeAddress;
   final String navigationUrl;
 
-  const ModelPlace({
+  ModelPlace({
     required this.id,
     required this.tripId,
     required this.placeOrder,

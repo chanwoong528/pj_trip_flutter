@@ -4,6 +4,7 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 
 import 'package:pj_trip/domain/location.dart';
+import 'package:pj_trip/db/model/model_place.dart';
 import 'package:pj_trip/utils/coordinate_converter.dart';
 
 class ServiceSearch {
@@ -24,10 +25,77 @@ class ServiceSearch {
         final List<dynamic> items = data['documents'] ?? [];
         final result = items.map((item) => Location.kakaoFromJson(item));
         return result.toList();
-      } else {
-        debugPrint('API 요청 실패: ${response.statusCode}');
-        return [];
       }
+      debugPrint('API 요청 실패: ${response.statusCode}');
+      return [];
+    } catch (e) {
+      debugPrint('검색 중 오류 발생: $e');
+      return [];
+    }
+  }
+
+  Future<List<Location>> searchPlaceGoogle(
+    String query, [
+    Bounds? bounds,
+  ]) async {
+    try {
+      final url = Uri.parse(
+        'https://places.googleapis.com/v1/places:searchText',
+      );
+      // .replace(
+      //   queryParameters: {
+      //     'query': query,
+      //     'key': dotenv.env['GOOGLE_PLACE_API_KEY'],
+      //     'language': 'ko', //TODO: 언어 설정 필요
+      //     'locationRestriction': jsonEncode({
+      //       "rectangle": {
+      //         "low": {"latitude": 33.0, "longitude": 124.0},
+      //         "high": {"latitude": 38.6, "longitude": 132.0},
+      //       },
+      //     }),
+      //   },
+      // );
+      debugPrint('bounds: ${bounds?.lowLatitude}');
+      final response = await http.post(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Goog-Api-Key': dotenv.env['GOOGLE_PLACE_API_KEY'] ?? "",
+          'X-Goog-FieldMask':
+              'places.displayName,places.formattedAddress,places.location,',
+        },
+        body: jsonEncode({
+          'textQuery': query,
+
+          'languageCode': 'en',
+          if (bounds != null)
+            'locationBias': {
+              "rectangle": {
+                "low": {
+                  "latitude": bounds.lowLatitude,
+                  "longitude": bounds.lowLongitude,
+                },
+                "high": {
+                  "latitude": bounds.highLatitude,
+                  "longitude": bounds.highLongitude,
+                },
+              },
+            },
+          // 'language': 'ko',
+          // 'locationRestriction': jsonEncode({
+
+          // }),
+        }),
+      );
+      debugPrint('response:  google ${response.body}');
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> data = json.decode(response.body);
+        final List<dynamic> items = data['places'] ?? [];
+        final result = items.map((item) => Location.googleFromJson(item));
+        return result.toList();
+      }
+      debugPrint('API 요청 실패: ${response.statusCode}');
+      return [];
     } catch (e) {
       debugPrint('검색 중 오류 발생: $e');
       return [];
@@ -52,6 +120,7 @@ class ServiceSearch {
         url,
         headers: {'User-Agent': 'PJTripApp/1.0 (Flutter Travel App)'},
       );
+      debugPrint('response:  nominatim ${response.body}');
       // Nominatim API는 배열을 직접 반환합니다
       final List<dynamic> items = json.decode(response.body);
       final result = items.map((item) => Location.nominatimFromJson(item));
@@ -108,27 +177,27 @@ class ServiceSearch {
       return [];
     }
   }
-}
 
-Future<void> getLocationInfoByLatLngNaver(double lat, double lng) async {
-  try {
-    final url = Uri.parse(
-      'https://naveropenapi.apigw.ntruss.com/map-reversegeocode/v2/gc',
-    ).replace(queryParameters: {'coords': '$lat,$lng', 'output': 'json'});
+  Future<void> getLocationInfoByLatLngNaver(double lat, double lng) async {
+    try {
+      final url = Uri.parse(
+        'https://naveropenapi.apigw.ntruss.com/map-reversegeocode/v2/gc',
+      ).replace(queryParameters: {'coords': '$lat,$lng', 'output': 'json'});
 
-    final response = await http.get(
-      url,
-      headers: {
-        'x-ncp-apigw-api-key-id': dotenv.env['NAVER_SEARCH_CLIENT_ID'] ?? '',
-        'x-ncp-apigw-api-key': dotenv.env['NAVER_SEARCH_CLIENT_SECRET'] ?? '',
-      },
-    );
+      final response = await http.get(
+        url,
+        headers: {
+          'x-ncp-apigw-api-key-id': dotenv.env['NAVER_SEARCH_CLIENT_ID'] ?? '',
+          'x-ncp-apigw-api-key': dotenv.env['NAVER_SEARCH_CLIENT_SECRET'] ?? '',
+        },
+      );
 
-    final Map<String, dynamic> data = json.decode(response.body);
-    final List<dynamic> items = data['items'] ?? [];
-    debugPrint('items: ${items.toString()}');
-  } catch (e) {
-    debugPrint('getLocationInfoByLatLngNaver error: $e');
+      final Map<String, dynamic> data = json.decode(response.body);
+      final List<dynamic> items = data['items'] ?? [];
+      debugPrint('items: ${items.toString()}');
+    } catch (e) {
+      debugPrint('getLocationInfoByLatLngNaver error: $e');
+    }
   }
 }
 
@@ -174,8 +243,6 @@ class SearchPlaceNaverResult {
     );
   }
 }
-
-
 
 // {
 // flutter: 			"title":"<b>파라다이스호텔 부산<\/b> 부티크 베이커리",

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
-
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+
 import 'package:pj_trip/store/pods_camera.dart';
 import 'package:flutter_naver_map/flutter_naver_map.dart';
 import 'package:pj_trip/store/pods_searched_marker.dart';
@@ -9,10 +9,12 @@ import 'package:pj_trip/store/current_places/pods_current_places.dart';
 import 'package:pj_trip/db/model/model_place.dart';
 import 'package:pj_trip/services/service_search.dart';
 import 'package:pj_trip/components/ui/bot_sheet_searched_places.dart';
+import 'package:pj_trip/store/current_travel/pods_current_travel.dart';
 
 class MapNaverHook extends HookConsumerWidget {
-  const MapNaverHook({super.key, this.deletePlaceId});
+  const MapNaverHook({super.key, this.deletePlaceId, this.initialCamera});
   final int? deletePlaceId;
+  final CameraModel? initialCamera;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -21,6 +23,7 @@ class MapNaverHook extends HookConsumerWidget {
     final camera = ref.watch(cameraProvider);
     final curMarker = ref.watch(markerProvider);
     final currentPlaces = ref.watch(currentPlacesProvider);
+    final currentTravel = ref.watch(currentTravelProvider);
 
     NMultipartPathOverlay makePath(List<ModelPlace> places) {
       if (mapControllerRef.value == null || places.isEmpty) {
@@ -81,12 +84,33 @@ class MapNaverHook extends HookConsumerWidget {
       }
     }
 
+    NLatLng caculateCameraPosition() {
+      if (initialCamera != null &&
+          initialCamera!.lat != -1 &&
+          initialCamera!.lng != -1 &&
+          initialCamera!.lat != 0 &&
+          initialCamera!.lng != 0) {
+        return NLatLng(initialCamera!.lng, initialCamera!.lat);
+      }
+      if (camera.lat != -1 &&
+          camera.lng != -1 &&
+          camera.lat != 0 &&
+          camera.lng != 0) {
+        return NLatLng(camera.lng, camera.lat);
+      }
+
+      return NLatLng(
+        currentTravel.placeLatitude.toDouble(),
+        currentTravel.placeLongitude.toDouble(),
+      );
+    }
+
     void deletePlaceMarker(int? placeId) {
       try {
         if (mapControllerRef.value == null || placeId == null) return;
 
         mapControllerRef.value?.deleteOverlay(
-          NOverlayInfo(id: 'trip_place_${placeId}', type: NOverlayType.marker),
+          NOverlayInfo(id: 'trip_place_$placeId', type: NOverlayType.marker),
         );
       } catch (e) {
         debugPrint('Failed to delete marker for place $placeId: $e');
@@ -110,12 +134,17 @@ class MapNaverHook extends HookConsumerWidget {
 
     useEffect(
       () {
-        if (mapControllerRef.value != null) {
-          debugPrint(mapControllerRef.value?.getLocationOverlay().toString());
-
+        if (mapControllerRef.value != null &&
+            camera.lat != -1 &&
+            camera.lng != -1 &&
+            camera.lat != 0 &&
+            camera.lng != 0) {
+          debugPrint(
+            'Updating camera ${caculateCameraPosition().latitude}, ${caculateCameraPosition().longitude}, ${camera.zoom}',
+          );
           mapControllerRef.value?.updateCamera(
             NCameraUpdate.withParams(
-              target: NLatLng(camera.lat, camera.lng),
+              target: caculateCameraPosition(),
               zoom: camera.zoom,
             ),
           );
@@ -132,7 +161,6 @@ class MapNaverHook extends HookConsumerWidget {
         camera.lng,
         camera.zoom,
         currentPlaces.map((e) => e.placeOrder).toList(),
-        mapControllerRef.value,
       ],
     );
 
@@ -153,7 +181,6 @@ class MapNaverHook extends HookConsumerWidget {
     }, [curMarker.lat, curMarker.lng, curMarker.title]);
 
     useEffect(() {
-      debugPrint('deletePlaceId: $deletePlaceId');
       if (mapControllerRef.value != null) {
         deletePlaceMarker(deletePlaceId);
       }
@@ -170,13 +197,15 @@ class MapNaverHook extends HookConsumerWidget {
           rotationGesturesEnable: false,
           scrollGesturesFriction: 0.1,
           initialCameraPosition: NCameraPosition(
-            target: NLatLng(camera.lat, camera.lng),
-            zoom: camera.zoom,
+            target: caculateCameraPosition(),
+            zoom: initialCamera?.zoom ?? camera.zoom,
           ),
         ),
         onMapReady: (controller) {
           mapControllerRef.value = controller;
-          debugPrint('Map controller ready');
+          debugPrint(
+            'Map controller ready ${caculateCameraPosition().latitude}, ${caculateCameraPosition().longitude}, ${camera.zoom}',
+          );
         },
 
         onSymbolTapped: (symbol) => onSymbolTapped(symbol),

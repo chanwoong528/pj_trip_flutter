@@ -1,3 +1,4 @@
+import 'package:pj_trip/db/model/model_place.dart';
 import 'package:pj_trip/db/model/model_trip.dart';
 
 class ModelTravel {
@@ -6,6 +7,7 @@ class ModelTravel {
   final String placeName;
   final num placeLatitude;
   final num placeLongitude;
+  final Bounds? bounds;
   List<ModelTrip> trips;
 
   ModelTravel({
@@ -14,6 +16,7 @@ class ModelTravel {
     required this.placeName,
     required this.placeLatitude,
     required this.placeLongitude,
+    this.bounds,
     this.trips = const [],
   });
   void setTrips(List<ModelTrip> trips) {

@@ -18,7 +18,13 @@ class ServiceDB {
       travelName TEXT,
       placeName TEXT,
       placeLatitude REAL,
-      placeLongitude REAL
+      placeLongitude REAL,
+      placeAddress TEXT,
+      navigationUrl TEXT,
+      boundsLowLatitude REAL,
+      boundsLowLongitude REAL,
+      boundsHighLatitude REAL,
+      boundsHighLongitude REAL
     )
   """);
 

@@ -6,7 +6,7 @@ part of 'pods_current_places.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$currentPlacesHash() => r'e96c26fc0d2a96807b0ca5e5e19405f2947160d6';
+String _$currentPlacesHash() => r'e80ff71761bac12387cb208d124815ddefdca24a';
 
 /// See also [CurrentPlaces].
 @ProviderFor(CurrentPlaces)

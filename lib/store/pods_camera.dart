@@ -1,4 +1,5 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+import 'package:flutter/foundation.dart'; // Added for debugPrint
 
 part 'pods_camera.g.dart';
 
@@ -13,10 +14,25 @@ class CameraModel {
 @riverpod
 class Camera extends _$Camera {
   @override
-  CameraModel build() => CameraModel(lat: 37.5665, lng: 126.9780);
+  CameraModel build() => CameraModel(lat: -1, lng: -1);
 
   void setCameraLocation(double lat, double lng, {double? zoom}) {
-    state = CameraModel(lat: lat, lng: lng, zoom: zoom ?? state.zoom);
+    final newZoom = zoom ?? state.zoom;
+
+    // Only update if the values have actually changed
+    if (state.lat == lat && state.lng == lng && state.zoom == newZoom) {
+      debugPrint('Camera location unchanged, skipping update');
+      return;
+    }
+
+    debugPrint('=== setCameraLocation called ===');
+    debugPrint('Previous state: ${state.lat}, ${state.lng}, ${state.zoom}');
+    debugPrint('New values: $lat, $lng, zoom: $newZoom');
+
+    state = CameraModel(lat: lat, lng: lng, zoom: newZoom);
+
+    debugPrint('State updated to: ${state.lat}, ${state.lng}, ${state.zoom}');
+    debugPrint('=== setCameraLocation completed ===');
   }
 
   void setZoom(double zoom) {

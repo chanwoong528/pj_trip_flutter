@@ -18,6 +18,7 @@ import 'package:pj_trip/store/pods_searched_marker.dart';
 import 'package:pj_trip/store/current_travel/pods_current_travel.dart';
 import 'package:pj_trip/db/model/model_travel.dart';
 import 'package:pj_trip/db/model/model_trip.dart';
+import 'package:pj_trip/db/model/model_place.dart';
 
 class ScreenTravelHook extends HookConsumerWidget {
   const ScreenTravelHook({super.key, this.travelName});
@@ -60,7 +61,6 @@ class ScreenTravelHook extends HookConsumerWidget {
       targetLocation.value = place;
       searchResults.value = [];
 
-      debugPrint('선택된 장소: ${place.x} ${place.y} ${place.title}');
       ref
           .read(cameraProvider.notifier)
           .setCameraLocation(place.y.toDouble(), place.x.toDouble());
@@ -92,6 +92,11 @@ class ScreenTravelHook extends HookConsumerWidget {
           'placeName': targetLocation.value.title,
           'placeLatitude': targetLocation.value.y,
           'placeLongitude': targetLocation.value.x,
+          'boundsHighLongitude':
+              targetLocation.value.boundingbox?.highLongitude,
+          'boundsHighLatitude': targetLocation.value.boundingbox?.highLatitude,
+          'boundsLowLongitude': targetLocation.value.boundingbox?.lowLongitude,
+          'boundsLowLatitude': targetLocation.value.boundingbox?.lowLatitude,
         });
 
         final batch = database.batch();
@@ -110,12 +115,21 @@ class ScreenTravelHook extends HookConsumerWidget {
           whereArgs: [travelId],
         );
 
+        debugPrint('trips:>>> ${trips.map((e) => e['tripName']).toList()}');
+
         final targetTravel = ModelTravel(
           id: travelId,
           travelName: travelNameController.text,
           placeName: targetLocation.value.title,
           placeLatitude: targetLocation.value.y,
           placeLongitude: targetLocation.value.x,
+          bounds: Bounds(
+            highLatitude: targetLocation.value.boundingbox?.highLatitude ?? 0.0,
+            lowLatitude: targetLocation.value.boundingbox?.lowLatitude ?? 0.0,
+            highLongitude:
+                targetLocation.value.boundingbox?.highLongitude ?? 0.0,
+            lowLongitude: targetLocation.value.boundingbox?.lowLongitude ?? 0.0,
+          ),
           trips: trips
               .map(
                 (e) => ModelTrip(
@@ -346,7 +360,7 @@ class ScreenTravelHook extends HookConsumerWidget {
                                 color: Colors.white,
                               )
                             : const Text(
-                                '여행 추가하기',
+                                '여행 추가',
                                 style: TextStyle(fontSize: 16),
                               ),
                       ),

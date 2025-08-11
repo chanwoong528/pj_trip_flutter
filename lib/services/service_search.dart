@@ -8,6 +8,13 @@ import 'package:pj_trip/db/model/model_place.dart';
 import 'package:pj_trip/utils/coordinate_converter.dart';
 
 class ServiceSearch {
+  static double calBiggerNumber(double a, double b) {
+    if (a > b) {
+      return a;
+    }
+    return b;
+  }
+
   Future<List<Location>> searchPlaceKakao(String query) async {
     try {
       final url = Uri.parse(
@@ -55,7 +62,43 @@ class ServiceSearch {
       //     }),
       //   },
       // );
-      debugPrint('bounds: ${bounds?.lowLatitude}');
+      debugPrint(
+        'bounds:>>> ${bounds?.highLatitude} ${bounds?.lowLatitude} ${bounds?.highLongitude} ${bounds?.lowLongitude}',
+      );
+      // bounds:>>> 20.2145811 135.8536855 35.8984245 154.205541 tokyo
+      // bounds:>>> 51.2867601 -0.5103751 51.6918741 0.3340155
+
+      // bounds 정보를 더 읽기 쉽게 출력
+      if (bounds != null) {
+        final lowLat = calBiggerNumber(bounds.highLatitude, bounds.lowLatitude);
+        final lowLng = calBiggerNumber(
+          bounds.highLongitude,
+          bounds.lowLongitude,
+        );
+        final highLat = calBiggerNumber(
+          bounds.lowLatitude,
+          bounds.highLatitude,
+        );
+        final highLng = calBiggerNumber(
+          bounds.lowLongitude,
+          bounds.highLongitude,
+        );
+
+        debugPrint('=== Bounds Information ===');
+        debugPrint('Low Point:  Lat: $lowLat, Lng: $lowLng');
+        debugPrint('High Point: Lat: $highLat, Lng: $highLng');
+        debugPrint('========================');
+
+        debugPrint('=== Bounds Information ===');
+        debugPrint(
+          'Low Point:  Lat: ${bounds.lowLatitude}  , Lng: ${bounds.lowLongitude}',
+        );
+        debugPrint(
+          'High Point: Lat: ${bounds.highLatitude} , Lng: ${bounds.highLongitude}',
+        );
+        debugPrint('========================');
+      }
+
       final response = await http.post(
         url,
         headers: {
@@ -87,6 +130,7 @@ class ServiceSearch {
           // }),
         }),
       );
+
       debugPrint('response:  google ${response.body}');
       if (response.statusCode == 200) {
         final Map<String, dynamic> data = json.decode(response.body);

@@ -96,7 +96,9 @@ class MapNaverHook extends HookConsumerWidget {
           camera.lng != -1 &&
           camera.lat != 0 &&
           camera.lng != 0) {
-        return NLatLng(camera.lng, camera.lat);
+        //TODO: have to set the standard on lat lng
+
+        return NLatLng(camera.lat, camera.lng);
       }
 
       return NLatLng(
@@ -134,14 +136,7 @@ class MapNaverHook extends HookConsumerWidget {
 
     useEffect(
       () {
-        if (mapControllerRef.value != null &&
-            camera.lat != -1 &&
-            camera.lng != -1 &&
-            camera.lat != 0 &&
-            camera.lng != 0) {
-          debugPrint(
-            'Updating camera ${caculateCameraPosition().latitude}, ${caculateCameraPosition().longitude}, ${camera.zoom}',
-          );
+        if (mapControllerRef.value != null) {
           mapControllerRef.value?.updateCamera(
             NCameraUpdate.withParams(
               target: caculateCameraPosition(),
@@ -203,9 +198,9 @@ class MapNaverHook extends HookConsumerWidget {
         ),
         onMapReady: (controller) {
           mapControllerRef.value = controller;
-          debugPrint(
-            'Map controller ready ${caculateCameraPosition().latitude}, ${caculateCameraPosition().longitude}, ${camera.zoom}',
-          );
+          // debugPrint(
+          //   'Map controller ready ${caculateCameraPosition().latitude}, ${caculateCameraPosition().longitude}, ${camera.zoom}',
+          // );
         },
 
         onSymbolTapped: (symbol) => onSymbolTapped(symbol),

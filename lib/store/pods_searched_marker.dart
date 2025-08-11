@@ -28,4 +28,8 @@ class Marker extends _$Marker {
   ) {
     state = MarkerModel(lat: lat, lng: lng, markerId: markerId, title: title);
   }
+
+  void resetMarker() {
+    state = MarkerModel(lat: 0, lng: 0, markerId: '', title: '');
+  }
 }

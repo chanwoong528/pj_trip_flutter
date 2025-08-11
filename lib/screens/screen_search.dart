@@ -32,6 +32,9 @@ class ScreenSearchHook extends HookConsumerWidget {
           );
           searchResults.value = results;
         } else {
+          debugPrint(
+            'currentTravel.bounds:>>> ${currentTravel.bounds?.highLatitude} ${currentTravel.bounds?.lowLatitude} ${currentTravel.bounds?.highLongitude} ${currentTravel.bounds?.lowLongitude}',
+          );
           final results = await serviceSearch.searchPlaceGoogle(
             searchController.text,
             currentTravel.bounds,

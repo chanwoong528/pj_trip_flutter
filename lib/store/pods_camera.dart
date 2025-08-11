@@ -8,13 +8,13 @@ class CameraModel {
   double lng;
   double zoom;
 
-  CameraModel({required this.lat, required this.lng, this.zoom = 10});
+  CameraModel({required this.lat, required this.lng, this.zoom = 4});
 }
 
 @riverpod
 class Camera extends _$Camera {
   @override
-  CameraModel build() => CameraModel(lat: -1, lng: -1);
+  CameraModel build() => CameraModel(lat: 0, lng: 0);
 
   void setCameraLocation(double lat, double lng, {double? zoom}) {
     final newZoom = zoom ?? state.zoom;

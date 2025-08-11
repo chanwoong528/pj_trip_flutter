@@ -29,9 +29,6 @@ class ScreenMapHook extends HookConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final currentTravel = ref.watch(currentTravelProvider);
 
-    debugPrint(
-      "current Travel  ${currentTravel.travelName} ${currentTravel.isLocationKorea()}",
-    );
     final tabController = useTabController(
       initialLength: currentTravel.trips.length,
     );
@@ -65,7 +62,7 @@ class ScreenMapHook extends HookConsumerWidget {
                 .setCameraLocation(
                   targetLocation.y,
                   targetLocation.x,
-                  zoom: 14,
+                  zoom: 12,
                 );
 
             await showModalBottomSheet(
@@ -94,27 +91,36 @@ class ScreenMapHook extends HookConsumerWidget {
       ServicePlace.getPlaces(
         currentTravel.trips[currentTabIndex.value].id,
       ).then((places) {
-        // debugPrint('places: ${places.map((e) => e.placeName).toList()}');
         ref.read(currentPlacesProvider.notifier).setCurrentPlaces(places);
-        if (places.isNotEmpty) {
-          final avgCenterLocation = getAvgCenterLocationByPlacesModel(places);
-          final zoom = getZoomFromPlacesByPlacesModel(places);
+        if (places.isEmpty) {
           ref
               .read(cameraProvider.notifier)
-              .setCameraLocation(
-                avgCenterLocation.y.toDouble(),
-                avgCenterLocation.x.toDouble(),
-                zoom: zoom,
-              );
+              .setCameraLocation(0.0, 0.0, zoom: 11);
+          return;
         }
+
+        final avgCenterLocation = getAvgCenterLocationByPlacesModel(places);
+        final zoom = getZoomFromPlacesByPlacesModel(places);
+
+        ref
+            .read(cameraProvider.notifier)
+            .setCameraLocation(
+              avgCenterLocation.y.toDouble(),
+              avgCenterLocation.x.toDouble(),
+              zoom: zoom,
+            );
       });
 
+      return null;
+    }, [currentTabIndex.value, currentTravel.trips]);
+
+    // tabController 리스너를 useEffect 밖으로 이동
+    useEffect(() {
       tabController.addListener(
         () => currentTabIndex.value = tabController.index,
       );
-
       return null;
-    }, [currentTabIndex.value]);
+    }, [tabController]);
 
     return Scaffold(
       body: Stack(

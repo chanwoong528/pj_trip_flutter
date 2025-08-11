@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:pj_trip/db/model/model_place.dart';
 
 class Location {
@@ -33,6 +34,9 @@ class Location {
   }
 
   factory Location.nominatimFromJson(Map<String, dynamic> json) {
+    debugPrint(
+      'nominatimFromJson:>>> ${json['boundingbox'][0]} ${json['boundingbox'][1]} ${json['boundingbox'][2]} ${json['boundingbox'][3]}',
+    );
     return Location(
       address: json['address']['country'] ?? '',
       title:
@@ -46,8 +50,8 @@ class Location {
       y: double.parse(json['lat'] ?? '0'),
       boundingbox: Bounds(
         lowLatitude: double.parse(json['boundingbox'][0] ?? '0'),
-        lowLongitude: double.parse(json['boundingbox'][1] ?? '0'),
-        highLatitude: double.parse(json['boundingbox'][2] ?? '0'),
+        lowLongitude: double.parse(json['boundingbox'][2] ?? '0'),
+        highLatitude: double.parse(json['boundingbox'][1] ?? '0'),
         highLongitude: double.parse(json['boundingbox'][3] ?? '0'),
       ),
     );

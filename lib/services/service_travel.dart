@@ -3,6 +3,7 @@ import 'package:pj_trip/db/service_db.dart';
 
 import 'package:pj_trip/db/model/model_travel.dart';
 import 'package:pj_trip/db/model/model_trip.dart';
+import 'package:pj_trip/db/model/model_place.dart';
 
 class ServiceTravel {
   static Future<List<ModelTravel>> getTravelsWithTrips() async {
@@ -17,6 +18,12 @@ class ServiceTravel {
               placeName: e['placeName'] as String,
               placeLatitude: e['placeLatitude'] as num,
               placeLongitude: e['placeLongitude'] as num,
+              bounds: Bounds(
+                highLatitude: e['boundsHighLatitude'] as double,
+                lowLatitude: e['boundsLowLatitude'] as double,
+                highLongitude: e['boundsHighLongitude'] as double,
+                lowLongitude: e['boundsLowLongitude'] as double,
+              ),
             ),
           )
           .toList();

@@ -8,7 +8,7 @@ class CameraModel {
   double lng;
   double zoom;
 
-  CameraModel({required this.lat, required this.lng, this.zoom = 4});
+  CameraModel({required this.lat, required this.lng, this.zoom = 11});
 }
 
 @riverpod

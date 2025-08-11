@@ -4,15 +4,22 @@ import 'package:google_maps_flutter/google_maps_flutter.dart' as google_maps;
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
+import 'package:pj_trip/services/service_search.dart';
 import 'package:pj_trip/store/pods_camera.dart';
 import 'package:pj_trip/store/current_travel/pods_current_travel.dart';
 import 'package:pj_trip/store/pods_searched_marker.dart';
 import 'package:pj_trip/store/current_places/pods_current_places.dart';
 
 class MapGoogleHook extends HookConsumerWidget {
-  const MapGoogleHook({super.key, this.initialCamera, this.deletePlaceId});
+  const MapGoogleHook({
+    super.key,
+    this.initialCamera,
+    this.deletePlaceId,
+    this.onTapMapGoogle,
+  });
   final CameraModel? initialCamera;
   final int? deletePlaceId;
+  final Function(double, double)? onTapMapGoogle;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -101,6 +108,14 @@ class MapGoogleHook extends HookConsumerWidget {
 
     void addMarker(google_maps.Marker marker) {
       markers.value = {...markers.value, marker};
+    }
+
+    void searchPlaceByLatLngGoogle(double lat, double lng) {
+      if (onTapMapGoogle != null) {
+        onTapMapGoogle!(lat, lng);
+        return;
+      }
+      ServiceSearch().searchPlaceByLatLngGoogle(lat, lng);
     }
 
     // Only move camera when map controller is available and camera changes
@@ -209,6 +224,9 @@ class MapGoogleHook extends HookConsumerWidget {
         markers: markers.value,
         polylines: polylines.value,
         onMapCreated: onMapCreated,
+        onLongPress: (latLng) =>
+            searchPlaceByLatLngGoogle(latLng.latitude, latLng.longitude),
+        myLocationButtonEnabled: false,
       ),
     );
   }

@@ -5,7 +5,6 @@ import 'dart:convert';
 
 import 'package:pj_trip/domain/location.dart';
 import 'package:pj_trip/db/model/model_place.dart';
-import 'package:pj_trip/utils/coordinate_converter.dart';
 
 class ServiceSearch {
   static double calBiggerNumber(double a, double b) {
@@ -41,6 +40,51 @@ class ServiceSearch {
     }
   }
 
+  Future<List<SearchPlaceNaverResult>> searchPlaceByLatLngGoogle(
+    double lat,
+    double lng,
+  ) async {
+    try {
+      final url = Uri.parse(
+        'https://places.googleapis.com/v1/places:searchNearby',
+      );
+      final response = await http.post(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Goog-Api-Key': dotenv.env['GOOGLE_PLACE_API_KEY'] ?? "",
+          'X-Goog-FieldMask':
+              'places.displayName,places.formattedAddress,places.location,',
+        },
+        body: jsonEncode({
+          'languageCode': 'ko',
+          "maxResultCount": 10,
+          'locationRestriction': {
+            "circle": {
+              "center": {"latitude": lat, "longitude": lng},
+              "radius": 100.0,
+            },
+          },
+        }),
+      );
+      debugPrint('response:  google ${response.body}');
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> data = json.decode(response.body);
+        final List<dynamic> items = data['places'] ?? [];
+        debugPrint('items: ${items.length}');
+        final result = items.map(
+          (item) => SearchPlaceNaverResult.fromGoogleJson(item),
+        );
+        return result.toList();
+      }
+      debugPrint('API 요청 실패: ${response.statusCode}');
+      return [];
+    } catch (e) {
+      debugPrint('검색 중 오류 발생: $e');
+      return [];
+    }
+  }
+
   Future<List<Location>> searchPlaceGoogle(
     String query, [
     Bounds? bounds,
@@ -49,55 +93,6 @@ class ServiceSearch {
       final url = Uri.parse(
         'https://places.googleapis.com/v1/places:searchText',
       );
-      // .replace(
-      //   queryParameters: {
-      //     'query': query,
-      //     'key': dotenv.env['GOOGLE_PLACE_API_KEY'],
-      //     'language': 'ko', //TODO: 언어 설정 필요
-      //     'locationRestriction': jsonEncode({
-      //       "rectangle": {
-      //         "low": {"latitude": 33.0, "longitude": 124.0},
-      //         "high": {"latitude": 38.6, "longitude": 132.0},
-      //       },
-      //     }),
-      //   },
-      // );
-      debugPrint(
-        'bounds:>>> ${bounds?.highLatitude} ${bounds?.lowLatitude} ${bounds?.highLongitude} ${bounds?.lowLongitude}',
-      );
-      // bounds:>>> 20.2145811 135.8536855 35.8984245 154.205541 tokyo
-      // bounds:>>> 51.2867601 -0.5103751 51.6918741 0.3340155
-
-      // bounds 정보를 더 읽기 쉽게 출력
-      if (bounds != null) {
-        final lowLat = calBiggerNumber(bounds.highLatitude, bounds.lowLatitude);
-        final lowLng = calBiggerNumber(
-          bounds.highLongitude,
-          bounds.lowLongitude,
-        );
-        final highLat = calBiggerNumber(
-          bounds.lowLatitude,
-          bounds.highLatitude,
-        );
-        final highLng = calBiggerNumber(
-          bounds.lowLongitude,
-          bounds.highLongitude,
-        );
-
-        debugPrint('=== Bounds Information ===');
-        debugPrint('Low Point:  Lat: $lowLat, Lng: $lowLng');
-        debugPrint('High Point: Lat: $highLat, Lng: $highLng');
-        debugPrint('========================');
-
-        debugPrint('=== Bounds Information ===');
-        debugPrint(
-          'Low Point:  Lat: ${bounds.lowLatitude}  , Lng: ${bounds.lowLongitude}',
-        );
-        debugPrint(
-          'High Point: Lat: ${bounds.highLatitude} , Lng: ${bounds.highLongitude}',
-        );
-        debugPrint('========================');
-      }
 
       final response = await http.post(
         url,
@@ -245,6 +240,29 @@ class ServiceSearch {
   }
 }
 
+// class SearchPlaceGoogleResult {
+//   final String title; //displayName
+//   final String address; //formattedAddress
+//   final double mapx; //location.lat
+//   final double mapy; //location.lng
+
+//   SearchPlaceGoogleResult({
+//     required this.title,
+//     required this.address,
+//     required this.mapx,
+//     required this.mapy,
+//   });
+
+//   factory SearchPlaceGoogleResult.fromJson(Map<String, dynamic> json) {
+//     return SearchPlaceGoogleResult(
+//       title: json['displayName'],
+//       address: json['formattedAddress'],
+//       mapx: double.parse(json['location']['lat']),
+//       mapy: double.parse(json['location']['lng']),
+//     );
+//   }
+// }
+
 class SearchPlaceNaverResult {
   final String title;
   final String link;
@@ -277,13 +295,25 @@ class SearchPlaceNaverResult {
       telephone: json['telephone'],
       address: json['address'],
       roadAddress: json['roadAddress'],
-      mapx:
-          CoordinateConverter.tm128ToWgs84(json['mapx'], json['mapy'])['lon'] ??
-          0,
+      mapx: double.parse(json['mapx']) / 1e7,
+      mapy: double.parse(json['mapy']) / 1e7,
+    );
+  }
 
-      mapy:
-          CoordinateConverter.tm128ToWgs84(json['mapx'], json['mapy'])['lat'] ??
-          0,
+  factory SearchPlaceNaverResult.fromGoogleJson(Map<String, dynamic> json) {
+    debugPrint('json: ${json.toString()}');
+
+    return SearchPlaceNaverResult(
+      title: json['displayName']['text'],
+      address: json['formattedAddress'],
+      mapx: double.parse(json['location']['latitude'].toString()),
+      mapy: double.parse(json['location']['longitude'].toString()),
+
+      link: json['link'] ?? '',
+      category: json['category'] ?? '',
+      description: json['description'] ?? '',
+      telephone: json['telephone'] ?? '',
+      roadAddress: json['roadAddress'] ?? '',
     );
   }
 }

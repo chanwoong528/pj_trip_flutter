@@ -4,11 +4,21 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:pj_trip/services/service_search.dart';
 
 class BotSheetSearchedPlaces extends HookConsumerWidget {
-  const BotSheetSearchedPlaces({super.key, required this.places});
+  const BotSheetSearchedPlaces({
+    super.key,
+    required this.places,
+    required this.onTapSinglePlace,
+  });
   final List<SearchPlaceNaverResult> places;
+  final Function(SearchPlaceNaverResult) onTapSinglePlace;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    void onTapListItem(SearchPlaceNaverResult place) {
+      Navigator.pop(context);
+      onTapSinglePlace(place);
+    }
+
     if (places.isEmpty) {
       return const SizedBox.shrink();
     }
@@ -22,7 +32,7 @@ class BotSheetSearchedPlaces extends HookConsumerWidget {
           topRight: Radius.circular(20),
         ),
       ),
-      child: Container(
+      child: SizedBox(
         width: double.infinity,
         height: double.infinity,
         child: Column(
@@ -56,7 +66,7 @@ class BotSheetSearchedPlaces extends HookConsumerWidget {
                         title: Text(places[index].title),
                         subtitle: Text(places[index].address ?? ''),
                         onTap: () {
-                          // TODO: 장소 선택 처리
+                          onTapListItem(places[index]);
                         },
                       ),
                     ),

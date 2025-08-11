@@ -6,6 +6,9 @@ import 'package:pj_trip/components/map/map_google.dart';
 
 import 'package:pj_trip/screens/screen_search.dart';
 import 'package:pj_trip/components/ui/bot_sheet_save_place.dart';
+import 'package:pj_trip/components/ui/bot_sheet_searched_places.dart';
+
+import 'package:pj_trip/services/service_search.dart';
 
 import 'package:pj_trip/utils/camera_math.dart';
 
@@ -16,9 +19,11 @@ import 'package:pj_trip/services/service_place.dart';
 import 'package:pj_trip/components/ui/list/list_places.dart';
 
 import 'package:pj_trip/components/map/map_naver_hook.dart';
-
+import 'package:pj_trip/domain/location.dart';
 import 'package:pj_trip/store/pods_camera.dart';
 import 'package:pj_trip/store/current_places/pods_current_places.dart';
+
+import 'package:flutter_naver_map/flutter_naver_map.dart';
 
 // 탭 내용을 위한 별도 위젯
 
@@ -87,6 +92,76 @@ class ScreenMapHook extends HookConsumerWidget {
       });
     }
 
+    void onTapSinglePlace(SearchPlaceNaverResult place, int tripId) async {
+      debugPrint('onTapSinglePlace: ${place.mapx}, ${place.mapy}');
+      debugPrint('tripId: $tripId');
+
+      // 위도 :
+      // 129.1253433
+      // 경도 :
+      // 35.1568699
+      final targetLocation = Location(
+        x: place.mapx,
+        y: place.mapy,
+        title: place.title,
+        address: place.address,
+      );
+
+      if (context.mounted) {
+        await showModalBottomSheet(
+          context: context,
+          isScrollControlled: true,
+          backgroundColor: Colors.transparent,
+          builder: (context) => BotSheetSavePlace(
+            location: targetLocation,
+            tripId: currentTravel.trips[currentTabIndex.value].id,
+          ),
+        );
+      }
+    }
+
+    void onTapMapGoogle(double lat, double lng) async {
+      final searchedPlaces = await ServiceSearch().searchPlaceByLatLngGoogle(
+        lat,
+        lng,
+      );
+      if (context.mounted && searchedPlaces.isNotEmpty) {
+        await showModalBottomSheet(
+          context: context,
+          isScrollControlled: true,
+          backgroundColor: Colors.transparent,
+          builder: (context) => BotSheetSearchedPlaces(
+            places: searchedPlaces,
+            onTapSinglePlace: (place) => onTapSinglePlace(
+              place,
+              currentTravel.trips[currentTabIndex.value].id,
+            ),
+          ),
+        );
+      }
+    }
+
+    void onTapSymbolPlace(NSymbolInfo symbol) async {
+      final searchedPlaces = await ServiceSearch().searchPlaceNaver(
+        symbol.caption,
+      );
+
+      if (context.mounted) {
+        await showModalBottomSheet(
+          context: context,
+          isScrollControlled: true,
+          backgroundColor: Colors.transparent,
+          builder: (context) => BotSheetSearchedPlaces(
+            places: searchedPlaces,
+            onTapSinglePlace: (place) => onTapSinglePlace(
+              place,
+              currentTravel.trips[currentTabIndex.value].id,
+            ),
+          ),
+        );
+      }
+    }
+
     useEffect(() {
       ServicePlace.getPlaces(
         currentTravel.trips[currentTabIndex.value].id,
@@ -131,8 +206,14 @@ class ScreenMapHook extends HookConsumerWidget {
               children: [
                 Expanded(
                   child: currentTravel.isLocationKorea()
-                      ? MapNaverHook(deletePlaceId: deletePlaceId.value)
-                      : MapGoogleHook(deletePlaceId: deletePlaceId.value),
+                      ? MapNaverHook(
+                          deletePlaceId: deletePlaceId.value,
+                          onTapSymbolPlace: onTapSymbolPlace,
+                        )
+                      : MapGoogleHook(
+                          deletePlaceId: deletePlaceId.value,
+                          onTapMapGoogle: onTapMapGoogle,
+                        ),
                 ),
 
                 if (currentTravel.trips.isNotEmpty) ...[

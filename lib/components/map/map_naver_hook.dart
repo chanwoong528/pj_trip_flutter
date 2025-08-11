@@ -12,10 +12,15 @@ import 'package:pj_trip/components/ui/bot_sheet_searched_places.dart';
 import 'package:pj_trip/store/current_travel/pods_current_travel.dart';
 
 class MapNaverHook extends HookConsumerWidget {
-  const MapNaverHook({super.key, this.deletePlaceId, this.initialCamera});
+  const MapNaverHook({
+    super.key,
+    this.deletePlaceId,
+    this.initialCamera,
+    this.onTapSymbolPlace,
+  });
   final int? deletePlaceId;
   final CameraModel? initialCamera;
-
+  final Function(NSymbolInfo)? onTapSymbolPlace;
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final mapControllerRef = useState<NaverMapController?>(null);
@@ -120,18 +125,23 @@ class MapNaverHook extends HookConsumerWidget {
     }
 
     void onSymbolTapped(NSymbolInfo symbol) async {
-      final searchedPlaces = await ServiceSearch().searchPlaceNaver(
-        symbol.caption,
-      );
-
-      if (context.mounted) {
-        await showModalBottomSheet(
-          context: context,
-          isScrollControlled: true,
-          backgroundColor: Colors.transparent,
-          builder: (context) => BotSheetSearchedPlaces(places: searchedPlaces),
-        );
+      if (onTapSymbolPlace != null) {
+        onTapSymbolPlace!(symbol);
+        return;
       }
+
+      // final searchedPlaces = await ServiceSearch().searchPlaceNaver(
+      //   symbol.caption,
+      // );
+
+      // if (context.mounted) {
+      //   await showModalBottomSheet(
+      //     context: context,
+      //     isScrollControlled: true,
+      //     backgroundColor: Colors.transparent,
+      //     builder: (context) => BotSheetSearchedPlaces(places: searchedPlaces),
+      //   );
+      // }
     }
 
     useEffect(
@@ -196,13 +206,7 @@ class MapNaverHook extends HookConsumerWidget {
             zoom: initialCamera?.zoom ?? camera.zoom,
           ),
         ),
-        onMapReady: (controller) {
-          mapControllerRef.value = controller;
-          // debugPrint(
-          //   'Map controller ready ${caculateCameraPosition().latitude}, ${caculateCameraPosition().longitude}, ${camera.zoom}',
-          // );
-        },
-
+        onMapReady: (controller) => mapControllerRef.value = controller,
         onSymbolTapped: (symbol) => onSymbolTapped(symbol),
       ),
     );

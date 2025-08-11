@@ -17,9 +17,8 @@ samples, guidance on mobile development, and a full API reference.
 
 ## Dep
 
-- flutter config ->
+- flutter config -> riverpod config 
 
-riverpod config
 dart run build_runner watch -d
 
 keytool -exportcert -alias androiddebugkey -keystore ~/.android/debug.keystore | openssl sha1 -binary | openssl base64
@@ -27,16 +26,15 @@ keytool -exportcert -alias androiddebugkey -keystore ~/.android/debug.keystore |
 
 
 ##TODO 
-- map onTap giving location info -> and save
-    - on tap -> api -> bottomsheet list of 5 -> choose -> save 
-    
-- internalization
-- share
+- [ ] map onTap giving location info -> and save
+    - on tap -> api -> bottomsheet list of 5 -> choose -> save  
+- [ ] internalization
+- [ ] share
+- [x] google map development (done)
+    - two map feature needs to be synced (minor bug i guess)
+- [ ] ui development (dark mode / light mode)
 
-
-- google map development
-- ui development (dark mode / light mode)
-- optional (landing page better ui)
+- [ ] optional (landing page better ui)
 
 
 

@@ -87,9 +87,6 @@ class ScreenHomeHook extends HookConsumerWidget {
     }
 
     Future<void> navigateToMap(ModelTravel travel) async {
-      debugPrint(
-        'navigateToMap:>@@@@@@@@@@@@>> ${travel.bounds?.highLatitude} ${travel.bounds?.lowLatitude} ${travel.bounds?.highLongitude} ${travel.bounds?.lowLongitude}',
-      );
       ref.read(currentTravelProvider.notifier).setCurrentTravel(travel);
       Navigator.pushNamed(context, '/map');
     }

@@ -10,6 +10,8 @@ import 'package:pj_trip/db/model/model_place.dart';
 import 'package:pj_trip/services/service_search.dart';
 import 'package:pj_trip/components/ui/bot_sheet_searched_places.dart';
 import 'package:pj_trip/store/current_travel/pods_current_travel.dart';
+import 'package:pj_trip/components/ui/marker_icon.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 class MapNaverHook extends HookConsumerWidget {
   const MapNaverHook({
@@ -65,20 +67,26 @@ class MapNaverHook extends HookConsumerWidget {
       return NMultipartPathOverlay(id: "test", paths: [path]);
     }
 
-    void markPlaces(List<ModelPlace> places) {
+    Future<void> markPlaces(List<ModelPlace> places) async {
       try {
         if (mapControllerRef.value == null || places.isEmpty) return;
 
         final markers = <NMarker>{};
-        for (final place in places) {
+
+        for (final (index, place) in places.indexed) {
+          final iconImage = await NOverlayImage.fromWidget(
+            widget: MarkerIcon(number: index + 1),
+            size: const Size(24, 24),
+            context: context,
+          );
           markers.add(
             NMarker(
               id: 'trip_place_${place.id}',
-              iconTintColor: Colors.blue,
               position: NLatLng(
                 place.placeLatitude.toDouble(),
                 place.placeLongitude.toDouble(),
               ),
+              icon: iconImage,
             ),
           );
         }
@@ -129,19 +137,6 @@ class MapNaverHook extends HookConsumerWidget {
         onTapSymbolPlace!(symbol);
         return;
       }
-
-      // final searchedPlaces = await ServiceSearch().searchPlaceNaver(
-      //   symbol.caption,
-      // );
-
-      // if (context.mounted) {
-      //   await showModalBottomSheet(
-      //     context: context,
-      //     isScrollControlled: true,
-      //     backgroundColor: Colors.transparent,
-      //     builder: (context) => BotSheetSearchedPlaces(places: searchedPlaces),
-      //   );
-      // }
     }
 
     useEffect(
@@ -156,7 +151,9 @@ class MapNaverHook extends HookConsumerWidget {
         }
 
         if (currentPlaces.isNotEmpty) {
-          markPlaces(currentPlaces);
+          Future.microtask(() async {
+            await markPlaces(currentPlaces);
+          });
         }
 
         return null;

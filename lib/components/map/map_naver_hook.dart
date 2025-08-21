@@ -7,11 +7,9 @@ import 'package:flutter_naver_map/flutter_naver_map.dart';
 import 'package:pj_trip/store/pods_searched_marker.dart';
 import 'package:pj_trip/store/current_places/pods_current_places.dart';
 import 'package:pj_trip/db/model/model_place.dart';
-import 'package:pj_trip/services/service_search.dart';
-import 'package:pj_trip/components/ui/bot_sheet_searched_places.dart';
+
 import 'package:pj_trip/store/current_travel/pods_current_travel.dart';
 import 'package:pj_trip/components/ui/marker_icon.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 
 class MapNaverHook extends HookConsumerWidget {
   const MapNaverHook({
@@ -114,6 +112,13 @@ class MapNaverHook extends HookConsumerWidget {
         return NLatLng(camera.lat, camera.lng);
       }
 
+      if (currentPlaces.isNotEmpty) {
+        return NLatLng(
+          currentPlaces.first.placeLatitude.toDouble(),
+          currentPlaces.first.placeLongitude.toDouble(),
+        );
+      }
+
       return NLatLng(
         currentTravel.placeLatitude.toDouble(),
         currentTravel.placeLongitude.toDouble(),
@@ -162,7 +167,7 @@ class MapNaverHook extends HookConsumerWidget {
         camera.lat,
         camera.lng,
         camera.zoom,
-        currentPlaces.map((e) => e.placeOrder).toList(),
+        currentPlaces.map((e) => e.id).toList(),
       ],
     );
 

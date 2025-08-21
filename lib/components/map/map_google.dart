@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart' as google_maps;
+import 'package:pj_trip/components/ui/marker_icon.dart';
 
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
@@ -9,6 +10,8 @@ import 'package:pj_trip/store/pods_camera.dart';
 import 'package:pj_trip/store/current_travel/pods_current_travel.dart';
 import 'package:pj_trip/store/pods_searched_marker.dart';
 import 'package:pj_trip/store/current_places/pods_current_places.dart';
+import 'package:widget_to_marker/widget_to_marker.dart';
+import 'package:pj_trip/db/model/model_place.dart';
 
 class MapGoogleHook extends HookConsumerWidget {
   const MapGoogleHook({
@@ -106,7 +109,28 @@ class MapGoogleHook extends HookConsumerWidget {
         );
     }
 
-    void addMarker(google_maps.Marker marker) {
+    Future<void> addMarkers(List<ModelPlace> places) async {
+      final newMarkers = <google_maps.Marker>{};
+
+      for (final (index, place) in places.indexed) {
+        final marker = google_maps.Marker(
+          markerId: google_maps.MarkerId('trip_place_${place.id}'),
+          position: google_maps.LatLng(
+            place.placeLongitude.toDouble(),
+            place.placeLatitude.toDouble(),
+          ),
+          icon: await MarkerIcon(number: index + 1).toBitmapDescriptor(),
+          infoWindow: google_maps.InfoWindow(title: place.placeName),
+        );
+        newMarkers.add(marker);
+      }
+
+      markers.value = {...newMarkers};
+    }
+
+    void addMarker(google_maps.Marker marker) async {
+      markers.value = {...markers.value, marker};
+      await Future.delayed(const Duration(milliseconds: 100));
       markers.value = {...markers.value, marker};
     }
 
@@ -132,25 +156,12 @@ class MapGoogleHook extends HookConsumerWidget {
 
     useEffect(
       () {
-        markers.value.clear();
-
         polylines.value = {};
 
-        for (final place in currentPlaces) {
-          addMarker(
-            google_maps.Marker(
-              markerId: google_maps.MarkerId('trip_place_${place.id}'),
-              position: google_maps.LatLng(
-                place.placeLongitude.toDouble(),
-                place.placeLatitude.toDouble(),
-              ),
-              icon: google_maps.BitmapDescriptor.defaultMarkerWithHue(
-                google_maps.BitmapDescriptor.hueBlue,
-              ),
-              infoWindow: google_maps.InfoWindow(title: place.placeName),
-            ),
-          );
-        }
+        Future.microtask(() async {
+          await addMarkers(currentPlaces);
+        });
+
         final polyline = google_maps.Polyline(
           polylineId: google_maps.PolylineId('route'),
           color: Colors.blue,
@@ -171,11 +182,13 @@ class MapGoogleHook extends HookConsumerWidget {
           polylines.value = {};
         }
 
-        debugPrint('polylines:>>> ${polylines.value}');
-
+        // debugPrint('polylines:>>> ${polylines.value}');
         return null;
       },
-      [currentPlaces.map((e) => e.placeOrder).toList()],
+      [
+        currentPlaces.map((e) => e.placeOrder).toList().toString(),
+        currentPlaces.map((e) => e.id).toList().toString(),
+      ],
     ); // placeOrder 대신 length만 사용하여 불필요한 재실행 방지
 
     useEffect(() {
